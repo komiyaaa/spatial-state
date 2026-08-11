@@ -1,0 +1,11 @@
+flask>=3.0
+
+# run_vgicp() で使用(VGICP_jissho_fast.py のアルゴリズムを移植した部分)
+open3d>=0.19
+laspy>=2.5
+numpy
+
+# pygicp(fast_gicpのPythonバインディング)はPyPIに無く、pip installできない。
+# backend/vendor/pygicp-win-cp38/ にビルド済みバイナリを同梱しているので、
+# venv作成後に site-packages へコピーすること。詳細は SETUP.md を参照。
+# pygicp が無い場合、run_vgicp() はラフレジ結果をそのまま使うフォールバック動作をする。

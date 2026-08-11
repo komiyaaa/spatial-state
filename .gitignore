@@ -1,0 +1,22 @@
+# Python仮想環境(再現可能、GitHubには上げない)
+# 再現困難なpygicp関連バイナリだけは backend/vendor/ に別途保存している
+backend/env/
+backend/venv/
+**/venv/
+**/env/
+__pycache__/
+*.pyc
+
+# 実行時に生成されるデータ(バックアップ対象外)
+backend/data/rough_registered/*
+backend/data/precise_registered/*
+backend/data/scan_json/*
+backend/data/vgicp_logs/*
+!backend/data/rough_registered/.gitkeep
+!backend/data/precise_registered/.gitkeep
+!backend/data/scan_json/.gitkeep
+!backend/data/vgicp_logs/.gitkeep
+
+# OS固有ファイル
+.DS_Store
+Thumbs.db
