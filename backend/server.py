@@ -37,9 +37,14 @@ import json
 import os
 import threading
 import time
+import uuid
 from pathlib import Path
 
 from flask import Flask, request, send_from_directory, jsonify
+
+from spatial_neighbors import face_neighbors
+from spatial_state import Params
+from state_store import StateStore
 
 BASE_DIR = Path(__file__).resolve().parent.parent  # ui_proto/ (フロントの置き場所)
 DATA_DIR = Path(__file__).resolve().parent / "data"
@@ -48,11 +53,17 @@ PRECISE_DIR = DATA_DIR / "precise_registered"
 SCAN_JSON_DIR = DATA_DIR / "scan_json"
 BASE_MAPS_DIR = BASE_DIR / "base_maps"
 VGICP_LOG_DIR = DATA_DIR / "vgicp_logs"
+TRACKER_STATE_DIR = DATA_DIR / "tracker_state"
 
 for d in (ROUGH_DIR, PRECISE_DIR, SCAN_JSON_DIR, VGICP_LOG_DIR):
     d.mkdir(parents=True, exist_ok=True)
 
 app = Flask(__name__, static_folder=str(BASE_DIR), static_url_path="")
+
+# 更新エンジン(spatial_state)。paramsは近傍数6(面隣接)を前提にしたデフォルト値
+# (spatial_state/params.py の expected_n_neighbors_for_validation=6 と対応)。
+params = Params()
+state_store = StateStore(TRACKER_STATE_DIR)
 
 # VGICP_jissho_fast.py のデフォルト値をそのまま踏襲
 DEFAULT_VOX_SIZES = [0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0]
@@ -112,7 +123,7 @@ def _transform(points, matrix):
     return np.dot(points, matrix[:3, :3].T) + matrix[:3, 3]
 
 
-def run_vgicp(rough_ply_path: Path, output_path: Path, space_id: str = "unknown") -> Path | None:
+def run_vgicp(rough_ply_path: Path, output_path: Path, space_id: str = "unknown") -> tuple[Path, float | None]:
     """
     VGICP_jissho_fast.py のアルゴリズムそのもの(複数ボクセルサイズを試し、
     fitness_scoreが最良のものを採用、アーリーストッピング付き)を、
@@ -121,6 +132,11 @@ def run_vgicp(rough_ply_path: Path, output_path: Path, space_id: str = "unknown"
     target(ベースマップ)は、space_idからbase_maps/manifest.jsonを引いて特定する。
     見つからない場合は、精密位置合わせをスキップし、ラフレジ結果をそのまま返す
     (パイプライン全体の配線を止めないためのフォールバック)。
+
+    返り値は (output_path, fitness_score) のタプル。fitness_scoreは、
+    後段のconvert_to_scan_json()・spatial_stateのw_fit計算に使われる
+    (spatial_id_design_memo_v2.md の SCAN_SESSION.patch_fitness_score に対応)。
+    フォールバック時(VGICPスキップ時)はfitness_score=Noneとして扱う。
     """
     target_path = _find_base_map_path(space_id)
     if target_path is None or not target_path.exists():
@@ -128,7 +144,7 @@ def run_vgicp(rough_ply_path: Path, output_path: Path, space_id: str = "unknown"
               f"ラフレジ結果をそのまま使います。")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_bytes(rough_ply_path.read_bytes())
-        return output_path
+        return output_path, None
 
     try:
         import open3d as o3d
@@ -139,7 +155,7 @@ def run_vgicp(rough_ply_path: Path, output_path: Path, space_id: str = "unknown"
               f"pip install open3d pygicp を実行してください。ラフレジ結果をそのまま使います。")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_bytes(rough_ply_path.read_bytes())
-        return output_path
+        return output_path, None
 
     target_pcd_full = _import_pcd(target_path)
     source_pcd_full = _import_pcd(rough_ply_path)
@@ -159,7 +175,7 @@ def run_vgicp(rough_ply_path: Path, output_path: Path, space_id: str = "unknown"
               f"ラフレジ結果をそのまま使います。")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_bytes(rough_ply_path.read_bytes())
-        return output_path
+        return output_path, None
 
     # --- ダウンサンプリング ---
     target_ds = cropped_target.voxel_down_sample(DEFAULT_DS_RESOLUTION)
@@ -205,7 +221,7 @@ def run_vgicp(rough_ply_path: Path, output_path: Path, space_id: str = "unknown"
         print(f"[run_vgicp] すべてのボクセルサイズで失敗しました。ラフレジ結果をそのまま使います。")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_bytes(rough_ply_path.read_bytes())
-        return output_path
+        return output_path, None
 
     result_pcd = o3d.geometry.PointCloud()
     result_pcd.points = o3d.utility.Vector3dVector(best_points)
@@ -219,7 +235,7 @@ def run_vgicp(rough_ply_path: Path, output_path: Path, space_id: str = "unknown"
                 f"Best score: {best_score}\nprocess_time: {elapsed:.5g}s\n")
     print(f"[run_vgicp] 完了: best_vsize={best_vsize} score={best_score:.5g} ({elapsed:.1f}s)")
 
-    return output_path
+    return output_path, best_score
 
 
 # ============================================================
@@ -323,11 +339,15 @@ def _world_to_spatial_ids(points, space_def: dict, zoom_level: int):
 
 
 def convert_to_scan_json(precise_ply_path: Path, out_dir: Path, space_id: str,
-                          zoom_level: int = DEFAULT_ZOOM_LEVEL) -> Path | None:
+                          zoom_level: int = DEFAULT_ZOOM_LEVEL,
+                          fitness_score: float | None = None) -> Path | None:
     """
     精密位置合わせ済みの点群を読み込み、対応するローカル空間の座標定義
     (backend/space_definitions/)を使って空間ID格子でボクセル化し、
     「空間ID → ヒット点数」のJSONとして書き出す。
+
+    fitness_score(run_vgicp()のbest_score)を、そのまま出力JSONに含める。
+    更新エンジン(spatial_state)側で w_fit(§2.7)の計算に使うための橋渡し。
 
     座標定義が見つからない場合は、プレースホルダーのJSONにフォールバックする
     (パイプライン全体を止めないため)。
@@ -378,6 +398,7 @@ def convert_to_scan_json(precise_ply_path: Path, out_dir: Path, space_id: str,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "point_count": len(points),
         "voxel_count": len(hits),
+        "fitness_score": fitness_score,
         "hits": hits,
     }
     out_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -413,13 +434,56 @@ def receive_registration_result():
 
     # --- Step2: VGICP(精密位置合わせ) ---
     precise_dir = PRECISE_DIR / space_id
-    precise_path = run_vgicp(rough_path, precise_dir / filename, space_id=space_id)
+    precise_path, fitness_score = run_vgicp(rough_path, precise_dir / filename, space_id=space_id)
 
     # --- Step3: JSON化(更新エンジンへの入力形式) ---
     scan_json_path = None
     if precise_path is not None:
         scan_json_dir = SCAN_JSON_DIR / space_id
-        scan_json_path = convert_to_scan_json(precise_path, scan_json_dir, space_id)
+        scan_json_path = convert_to_scan_json(precise_path, scan_json_dir, space_id, fitness_score=fitness_score)
+
+    # --- Step4: 更新エンジン(spatial_state)に反映する ---
+    voxel_summary = {}
+    if scan_json_path is not None:
+        scan_data = json.loads(scan_json_path.read_text(encoding="utf-8"))
+        hits = scan_data.get("hits")
+        if hits:
+            tracker = state_store.load(space_id, params)
+
+            # このスキャンで直接ヒットしたボクセル + その面隣接も処理対象にする
+            voxels_to_process = set(hits.keys())
+            for sid in list(hits.keys()):
+                voxels_to_process.update(face_neighbors(sid))
+
+            for sid in voxels_to_process:
+                c_self = hits.get(sid, 0)
+                neighbor_ids = face_neighbors(sid)
+                neighbor_counts = [hits.get(n, 0) for n in neighbor_ids]
+                # covered判定は簡易版(自身がヒット or 近傍ヒット数がh_cov以上)。
+                # TODO: スキャン全体のバウンディングボックスに基づく判定への
+                # 差し替えを検討する(CLAUDE.md 手順5参照)。
+                covered = (c_self > 0) or (sum(1 for c in neighbor_counts if c > 0) >= params.h_cov)
+
+                tracker.update_voxel(
+                    voxel_id=sid,
+                    c_self=c_self,
+                    neighbor_ids=neighbor_ids,
+                    neighbor_counts=neighbor_counts,
+                    covered=covered,
+                    patch_fitness=fitness_score,
+                    structural_label=None,  # 構造ラベルは現状未実装(手順7参照)
+                )
+
+            session = {
+                "session_id": uuid.uuid4().hex,
+                "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                "source_ply": str(precise_path),
+                "patch_fitness_score": fitness_score,
+            }
+            state_store.save(space_id, tracker, session=session)
+
+            full_summary = tracker.summary()
+            voxel_summary = {sid: full_summary[sid] for sid in voxels_to_process}
 
     return jsonify({
         "status": "ok",
@@ -427,6 +491,18 @@ def receive_registration_result():
         "rough_registered_path": str(rough_path),
         "precise_registered_path": str(precise_path) if precise_path else None,
         "scan_json_path": str(scan_json_path) if scan_json_path else None,
+        "fitness_score": fitness_score,
+        "voxel_summary": voxel_summary,
+    })
+
+
+@app.route("/api/spatial-state/<space_id>", methods=["GET"])
+def get_spatial_state(space_id):
+    """space_idごとの、全ボクセルの現在の状態一覧を返す(3Dビューワ用)。"""
+    tracker = state_store.load(space_id, params)
+    return jsonify({
+        "space_id": space_id,
+        "voxels": tracker.summary(),
     })
 
 

@@ -12,10 +12,12 @@ backend/data/rough_registered/*
 backend/data/precise_registered/*
 backend/data/scan_json/*
 backend/data/vgicp_logs/*
+backend/data/tracker_state/*
 !backend/data/rough_registered/.gitkeep
 !backend/data/precise_registered/.gitkeep
 !backend/data/scan_json/.gitkeep
 !backend/data/vgicp_logs/.gitkeep
+!backend/data/tracker_state/.gitkeep
 
 # OS固有ファイル
 .DS_Store

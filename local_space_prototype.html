@@ -625,10 +625,41 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-function loadVoxels(spaceId) {
-  currentVoxels = generateVoxelsForSpace(spaceId).filter(
-    v => v.state === 'OCCUPIED' || v.state === 'DECAYED'
-  );
+// spatial_state(バックエンド更新エンジン)にはmobility_flagという概念が無く、
+// 連続値mu([0,1]、動的度合い)とconfidence_flag(CONFIRMED/PENDING)しか無い。
+// ビューワ表示用に、ここでSTATIC/DYNAMIC/PENDINGへ変換する。閾値(0.4/0.6)は
+// 暫定値であり、実データでの較正が必要(docs/spatial_id_design_memo_v2.md §4)。
+function muToMobilityFlag(v) {
+  if (v.confidence_flag !== 'CONFIRMED') return 'PENDING';
+  if (v.mu >= 0.6) return 'DYNAMIC';
+  if (v.mu <= 0.4) return 'STATIC';
+  return 'PENDING';
+}
+
+async function loadVoxels(spaceId) {
+  let voxels = [];
+  try {
+    const res = await fetch(`/api/spatial-state/${encodeURIComponent(spaceId)}`);
+    if (res.ok) {
+      const data = await res.json();
+      voxels = Object.entries(data.voxels || {}).map(([spatialId, v]) => {
+        const [, f, x, y] = spatialId.split('/');
+        return {
+          spatial_id: spatialId, x: Number(x), y: Number(y), z: Number(f),
+          state: v.state, mobility_flag: muToMobilityFlag(v), structural_label: null,
+        };
+      });
+    }
+  } catch (e) {
+    console.warn('[loadVoxels] /api/spatial-state の取得に失敗しました。', e);
+  }
+
+  // 実データが無い空間(まだ計測が行われていない)は、デモ用のモックにフォールバックする
+  if (voxels.length === 0) {
+    voxels = generateVoxelsForSpace(spaceId);
+  }
+
+  currentVoxels = voxels.filter(v => v.state === 'OCCUPIED' || v.state === 'DECAYED');
   buildMeshes();
   renderLegend();
   renderStats();
