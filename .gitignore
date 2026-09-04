@@ -13,11 +13,41 @@ backend/data/precise_registered/*
 backend/data/scan_json/*
 backend/data/vgicp_logs/*
 backend/data/tracker_state/*
+backend/data/verify_output/*
+backend/data/planes/*
+backend/data/voxel_labels/*
+backend/data/structural_label_fitness_history/*
+backend/data/_local_space_regen_backup/*
+backend/data/spatial_voxel_cache/*
+backend/data/voxel_color_cache/*
+backend/data/spatial_resolution_results/*
+backend/data/registry/*
+backend/data/registration_results/*
+backend/data/_archived_local_spaces/*
+backend/data/_migration_backup/*
+backend/data/*.log
 !backend/data/rough_registered/.gitkeep
 !backend/data/precise_registered/.gitkeep
 !backend/data/scan_json/.gitkeep
 !backend/data/vgicp_logs/.gitkeep
 !backend/data/tracker_state/.gitkeep
+!backend/data/verify_output/.gitkeep
+!backend/data/planes/.gitkeep
+!backend/data/voxel_labels/.gitkeep
+!backend/data/structural_label_fitness_history/.gitkeep
+!backend/data/_local_space_regen_backup/.gitkeep
+!backend/data/spatial_voxel_cache/.gitkeep
+!backend/data/voxel_color_cache/.gitkeep
+!backend/data/spatial_resolution_results/.gitkeep
+!backend/data/registry/.gitkeep
+!backend/data/registration_results/.gitkeep
+!backend/data/_archived_local_spaces/.gitkeep
+!backend/data/_migration_backup/.gitkeep
+
+# 実行時に生成される建物・ローカル空間レジストリ(backend/data/registry/へ
+# 未移行の旧パス。BuildingRepositoryが現在もここを読む、server.py参照)
+backend/buildings.json
+backend/local_spaces.json
 
 # OS固有ファイル
 .DS_Store

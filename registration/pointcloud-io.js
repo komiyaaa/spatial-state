@@ -229,12 +229,14 @@ function buildPLYText(positions, colors) {
  * @param {Float32Array} positions
  * @param {Float32Array|null} colors
  * @param {string} filename
- * @param {(plyText: string, filename: string, spaceId: string|null) => Promise<void>} outputHandler
+ * @param {(plyText: string, filename: string, spaceId: string|null, sourceFilename: string|null) => Promise<void>} outputHandler
  * @param {string|null} spaceId どのローカル空間向けのラフレジ結果かを示すID(任意)
+ * @param {string|null} sourceFilename 元のSourceファイル名(registration_results/の
+ *   アーカイブで元Sourceを追跡するためだけの情報、任意。2026-09-02追加)
  */
-export async function exportRegisteredPointCloud(positions, colors, filename, outputHandler, spaceId = null) {
+export async function exportRegisteredPointCloud(positions, colors, filename, outputHandler, spaceId = null, sourceFilename = null) {
   const plyText = buildPLYText(positions, colors);
-  await outputHandler(plyText, filename, spaceId);
+  await outputHandler(plyText, filename, spaceId, sourceFilename);
 }
 
 /**
@@ -255,14 +257,18 @@ export async function downloadHandler(plyText, filename) {
  * 受信後、サーバー側でVGICP(精密位置合わせ)・JSON化を実行する想定
  * (server.py 側の run_vgicp / convert_to_scan_json が実際の差し替えポイント)。
  */
-export async function postToServerHandler(plyText, filename, spaceId) {
+export async function postToServerHandler(plyText, filename, spaceId, sourceFilename = null) {
+  const headers = {
+    "Content-Type": "text/plain",
+    "X-Filename": filename,
+    "X-Space-Id": spaceId ?? "unknown",
+  };
+  // HTTPヘッダ値はASCII前提のため、日本語ファイル名等を安全に渡せるよう
+  // encodeURIComponent()する(サーバー側でdecodeURIComponent()して復元する)。
+  if (sourceFilename) headers["X-Source-Filename"] = encodeURIComponent(sourceFilename);
   const res = await fetch("/api/registration-results", {
     method: "POST",
-    headers: {
-      "Content-Type": "text/plain",
-      "X-Filename": filename,
-      "X-Space-Id": spaceId ?? "unknown",
-    },
+    headers,
     body: plyText,
   });
   if (!res.ok) {

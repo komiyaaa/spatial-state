@@ -4,26 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>空間IDベース永続状態モデル - プロトタイプ</title>
+<link rel="stylesheet" href="./shared/design-tokens.css">
 <style>
-  :root {
-    --bg: #fafaf9;
-    --panel: #ffffff;
-    --border: #e5e3de;
-    --border-soft: #eeece7;
-    --text: #2b2a27;
-    --text-dim: #7a786f;
-    --text-faint: #a7a59c;
-    --accent: #0f9d8f;
-    --accent-dark: #0c8377;
-    --accent-soft: #e6f5f3;
-    --danger: #d64545;
-    --danger-soft: #fbeaea;
-    --warn: #d98c2b;
-    --neutral: #9a988e;
-    --shadow-sm: 0 1px 2px rgba(30,29,26,0.05);
-    --shadow-md: 0 4px 16px rgba(30,29,26,0.08);
-    --radius: 8px;
-  }
+  /* design tokens(--bg・--accent・--radius等)はshared/design-tokens.cssに
+     集約済み(2026-09-03、共通デザイン基盤整備)。ここでの再定義はしない。 */
   * { box-sizing: border-box; }
   body {
     margin: 0;
@@ -94,6 +78,64 @@
   }
   .empty-state { padding: 28px 16px; text-align: center; color: var(--text-faint); font-size: 12.5px; line-height: 1.6; }
 
+  .pane-header-actions { display: flex; align-items: center; gap: 8px; }
+  .add-btn {
+    border: 1px solid var(--border); background: var(--panel); color: var(--accent-dark);
+    border-radius: 6px; padding: 4px 9px; font-size: 11.5px; cursor: pointer; font-weight: 600;
+    transition: background 0.12s, border-color 0.12s; white-space: nowrap;
+  }
+  .add-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .add-form {
+    margin: 0 14px 12px; padding: 10px 12px 12px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg); display: flex; flex-direction: column; gap: 3px;
+  }
+  .add-form input {
+    width: 100%; padding: 6px 9px; border: 1px solid var(--border); border-radius: 6px;
+    font-size: 12.5px; font-family: inherit; color: var(--text); background: var(--panel);
+    margin-bottom: 8px;
+  }
+  .add-form-desc {
+    font-size: 11.5px; color: var(--text-dim); line-height: 1.6; margin: 0 0 8px;
+  }
+  .add-form-label {
+    font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 3px;
+    display: flex; align-items: baseline; gap: 5px;
+  }
+  .add-form-label .req { color: var(--danger); font-weight: 700; font-size: 9.5px; }
+  .add-form-label .opt { color: var(--text-faint); font-weight: 500; font-size: 9.5px; }
+  .add-form-hint {
+    font-size: 10.5px; color: var(--text-faint); line-height: 1.5; margin: -5px 0 9px;
+  }
+  .add-form-advanced { margin: 2px 0 4px; border-top: 1px dashed var(--border); padding-top: 8px; }
+  .add-form-advanced summary {
+    font-size: 11px; color: var(--text-dim); cursor: pointer; list-style: none;
+  }
+  .add-form-advanced summary::-webkit-details-marker { display: none; }
+  .add-form-advanced summary::before { content: '▸ '; }
+  .add-form-advanced[open] summary::before { content: '▾ '; }
+  .add-form-advanced summary:hover { color: var(--text); }
+  .add-form-advanced[open] summary { margin-bottom: 8px; }
+  .add-form-actions { display: flex; gap: 6px; margin-top: 2px; }
+  .add-form-submit, .add-form-cancel {
+    flex: 1; padding: 6px 0; border-radius: 6px; font-size: 12.5px; cursor: pointer; border: 1px solid var(--border);
+  }
+  .add-form-submit { background: var(--accent); color: white; border-color: var(--accent); font-weight: 600; }
+  .add-form-submit:hover { background: var(--accent-dark); }
+  .add-form-submit:disabled { opacity: 0.6; cursor: default; }
+  .add-form-cancel { background: var(--panel); color: var(--text-dim); }
+  .add-form-cancel:hover { background: var(--accent-soft); }
+
+  .rotation-preview-toolbar { display: flex; align-items: center; gap: 8px; margin: 10px 0 8px; flex-wrap: wrap; }
+  .rotation-preview-btn { flex: none !important; padding: 5px 12px !important; }
+  .rotation-preview-legend { font-size: 10.5px; color: var(--text-faint); margin-left: auto; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  .rp-swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-left: 8px; }
+  .rp-swatch:first-child { margin-left: 0; }
+  .rotation-preview-readout {
+    font-size: 11px; color: var(--text-dim); background: var(--bg); border: 1px solid var(--border-soft);
+    border-radius: 6px; padding: 8px 10px; margin-top: 8px; line-height: 1.7; font-variant-numeric: tabular-nums;
+    white-space: pre-wrap;
+  }
+
   .space-pane { flex: 1; display: flex; flex-direction: column; min-width: 0; }
   .space-pane-header {
     padding: 14px 20px; border-bottom: 1px solid var(--border);
@@ -110,6 +152,7 @@
   .floor-label::after { content: ''; flex: 1; height: 1px; background: var(--border-soft); }
   .space-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); gap: 10px; }
   .space-card {
+    position: relative;
     border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 10px;
     background: var(--panel); cursor: pointer; text-align: center;
     transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
@@ -123,6 +166,52 @@
     border-radius: 3px; background: var(--accent-soft); color: var(--accent-dark); font-weight: 700;
     letter-spacing: 0.02em;
   }
+  .space-card-delete-btn {
+    position: absolute; top: 5px; right: 5px; width: 20px; height: 20px; padding: 0;
+    border: none; border-radius: 4px; background: transparent; color: var(--text-faint);
+    font-size: 13px; line-height: 20px; cursor: pointer; opacity: 0;
+    transition: opacity 0.12s, background 0.12s, color 0.12s;
+  }
+  .space-card:hover .space-card-delete-btn { opacity: 1; }
+  .space-card-delete-btn:hover { background: var(--status-error-soft); color: var(--status-error); }
+
+  /* Local Space削除専用モーダル(2026-09-03追加。window.confirm()は廃止) */
+  .delete-modal-overlay {
+    position: fixed; inset: 0; background: var(--overlay-backdrop);
+    display: flex; align-items: center; justify-content: center; z-index: 1000;
+  }
+  .delete-modal {
+    width: 440px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow-y: auto;
+    background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow-md);
+    padding: 20px 22px;
+  }
+  .delete-modal-title { font-size: 15px; font-weight: 700; color: var(--danger); margin: 0 0 14px; }
+  .delete-modal-info { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
+  .delete-modal-info th {
+    text-align: left; color: var(--text-faint); font-weight: 600; padding: 3px 10px 3px 0;
+    white-space: nowrap; vertical-align: top;
+  }
+  .delete-modal-info td { padding: 3px 0; color: var(--text); word-break: break-all; }
+  .delete-modal-warning {
+    font-size: 11.5px; line-height: 1.6; color: var(--text-dim); background: var(--danger-soft);
+    border: 1px solid var(--danger); border-radius: 6px; padding: 9px 11px; margin-bottom: 14px;
+  }
+  .delete-modal-warning code { font-size: 10.5px; background: var(--code-chip-bg); padding: 1px 4px; border-radius: 3px; }
+  .delete-modal-confirm-label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 16px; }
+  .delete-modal-confirm-label input {
+    width: 100%; margin-top: 6px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px;
+    font-size: 13px; font-family: inherit; box-sizing: border-box;
+  }
+  .delete-modal-confirm-label input:focus { outline: none; border-color: var(--danger); box-shadow: 0 0 0 3px var(--danger-soft); }
+  .delete-modal-actions { display: flex; gap: 10px; }
+  .delete-modal-cancel-btn, .delete-modal-confirm-btn {
+    flex: 1; padding: 8px 0; border-radius: 6px; font-size: 12.5px; cursor: pointer; border: 1px solid var(--border);
+  }
+  .delete-modal-cancel-btn { background: var(--panel); color: var(--text-dim); }
+  .delete-modal-cancel-btn:hover { background: var(--bg); }
+  .delete-modal-confirm-btn { background: var(--danger); color: white; border-color: var(--danger); font-weight: 600; }
+  .delete-modal-confirm-btn:hover:not(:disabled) { background: var(--status-error-dark); }
+  .delete-modal-confirm-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
   /* ---- 画面2: ローカル空間詳細 ---- */
   .screen-detail { display: none; flex: 1; min-height: 0; flex-direction: column; }
@@ -142,7 +231,7 @@
   #canvas-holder canvas { display: block; }
 
   .viewer-stats {
-    position: absolute; top: 14px; left: 14px; background: rgba(255,255,255,0.92);
+    position: absolute; top: 14px; left: 14px; background: var(--panel-overlay);
     backdrop-filter: blur(6px); border: 1px solid var(--border); border-radius: 8px;
     padding: 10px 14px; font-size: 11.5px; color: var(--text-dim); box-shadow: var(--shadow-sm);
     display: flex; gap: 16px;
@@ -178,7 +267,7 @@
   }
   .legend-item .lbl { display: flex; align-items: center; gap: 8px; }
   .legend-item .cnt { color: var(--text-faint); font-size: 11px; font-variant-numeric: tabular-nums; }
-  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; box-shadow: inset 0 0 0 1px var(--swatch-outline); }
   .legend-swatch.ghost {
     background: transparent !important; border: 1.5px dashed var(--danger); box-shadow: none;
   }
@@ -192,7 +281,7 @@
   .add-mode-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 
   #tooltip {
-    position: absolute; pointer-events: none; background: rgba(30,29,26,0.94); color: white;
+    position: absolute; pointer-events: none; background: var(--tooltip-bg); color: white;
     font-size: 11.5px; padding: 7px 10px; border-radius: 7px; display: none; white-space: nowrap; line-height: 1.6;
     box-shadow: var(--shadow-md); z-index: 10;
   }
@@ -216,7 +305,22 @@
     <div class="building-pane">
       <div class="pane-header">
         <span class="label">建物一覧</span>
-        <span class="total" id="buildingTotal"></span>
+        <span class="pane-header-actions">
+          <span class="total" id="buildingTotal"></span>
+          <button class="add-btn" id="btnAddBuilding" title="建物を追加">＋ 建物</button>
+        </span>
+      </div>
+      <div class="add-form" id="addBuildingForm" style="display:none;">
+        <label class="add-form-label" for="newBuildingName">建物名 <span class="req">必須</span></label>
+        <input id="newBuildingName" placeholder="例: 市ヶ谷田町校舎">
+        <label class="add-form-label" for="newBuildingReNum">不動産番号 <span class="opt">任意</span></label>
+        <input id="newBuildingReNum" placeholder="社内で管理している番号があれば">
+        <label class="add-form-label" for="newBuildingAddress">住所 <span class="opt">任意</span></label>
+        <input id="newBuildingAddress" placeholder="例: 東京都新宿区…">
+        <div class="add-form-actions">
+          <button class="add-form-submit" id="btnSubmitBuilding">建物を追加</button>
+          <button class="add-form-cancel" id="btnCancelBuilding">キャンセル</button>
+        </div>
       </div>
       <div class="search-box-wrap">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -227,7 +331,91 @@
     <div class="space-pane">
       <div class="space-pane-header">
         <h2 id="spacePaneTitle">整備中ローカル空間</h2>
-        <span class="count" id="spacePaneCount"></span>
+        <span class="pane-header-actions">
+          <span class="count" id="spacePaneCount"></span>
+          <button class="add-btn" id="btnOpenIntegratedView" title="Integrated View">🔗 Integrated View</button>
+          <button class="add-btn" id="btnOpenSpatialNetworkView" title="Spatial Network View">🕸️ Spatial Network</button>
+          <button class="add-btn" id="btnAddLocalSpace" title="ローカル空間を追加">＋ ローカル空間</button>
+        </span>
+      </div>
+      <div class="add-form" id="addLocalSpaceForm" style="display:none; margin: 12px 20px; flex-direction:column;">
+
+        <!-- ステップ1: Base Map選択 -> Detect Planes -->
+        <div id="spaceStep1">
+          <p class="add-form-desc">
+            事前に計測しておいた、この部屋・フロアの3Dスキャンデータ(ベースマップ)を
+            アップロードし、構造平面(床・天井・壁等)を抽出します。
+          </p>
+
+          <label class="add-form-label" for="newSpaceCode">特定コード <span class="req">必須</span></label>
+          <input id="newSpaceCode" placeholder="例: G003">
+          <p class="add-form-hint">この建物の中で、このローカル空間を区別するための短い識別コード(半角英数字推奨)。base_maps・space_definitionsのファイル名にもそのまま使われます。</p>
+
+          <label class="add-form-label" for="newSpaceFloor">階数 <span class="opt">任意・既定1階</span></label>
+          <input id="newSpaceFloor" type="number" placeholder="例: 1" value="1">
+
+          <label class="add-form-label" for="newSpaceFile">ベースマップファイル <span class="req">必須</span></label>
+          <input type="file" id="newSpaceFile" accept=".las,.ply">
+          <p class="add-form-hint">.las または .ply 形式の点群ファイル。レーザースキャナ等で計測した、この部屋・フロア内部の3D点群データを選択してください(位置合わせ済みの点群ではなく、部屋全体を測った生の点群)。</p>
+
+          <p id="spaceStep1LockedNotice" class="add-form-hint" style="display:none; color:var(--warn);">
+            平面抽出済みのため、特定コード・ベースマップファイルはロックされています。
+            変更するには、下の「Reset」で平面抽出結果を破棄してください
+            (古いspace_idのPlaneが新しいspace_idへ引き継がれることはありません)。
+          </p>
+          <button class="add-form-cancel" id="btnResetPlaneDetection" style="display:none;">Reset(平面抽出結果を破棄して変更する)</button>
+
+          <div class="add-form-actions">
+            <button class="add-form-submit" id="btnDetectPlanes">Detect Planes(平面を抽出)</button>
+            <button class="add-form-cancel" id="btnCancelLocalSpace">キャンセル</button>
+          </div>
+        </div>
+
+        <!-- ステップ2: Plane確認・ラベル修正 -->
+        <div id="spaceStep2" style="display:none;">
+          <p class="add-form-desc">
+            抽出された平面ごとにラベル(suggested_label)が提案されています。
+            リストから選択して、必要に応じてconfirmed_labelを修正してください
+            (机・棚等の非構造物はIGNOREにしてください)。完全自動分類ではないため、
+            必ず内容を確認してください。
+          </p>
+          <div id="planeViewerHolder" style="width:100%; height:320px; border:1px solid var(--border); border-radius:6px; overflow:hidden;"></div>
+          <div id="planeListWrap" style="display:flex; gap:12px; margin-top:10px;">
+            <div id="planeList" style="flex:1; max-height:220px; overflow-y:auto; border:1px solid var(--border-soft); border-radius:6px;"></div>
+            <div id="planeDetail" style="flex:1; border:1px solid var(--border-soft); border-radius:6px; padding:10px; font-size:13px;">
+              <span class="add-form-hint">左のリストから平面を選択してください</span>
+            </div>
+          </div>
+          <div class="add-form-actions">
+            <button class="add-form-submit" id="btnGoToRotationStep">次へ(回転の設定)</button>
+            <button class="add-form-cancel" id="btnBackToStep1">戻る</button>
+          </div>
+        </div>
+
+        <!-- ステップ3: rotation入力・確認 -> Generate Local Space -->
+        <div id="spaceStep3" style="display:none;">
+          <label class="add-form-label" for="newSpaceRotationDegree">回転(度) <span class="req">必須</span></label>
+          <input id="newSpaceRotationDegree" type="number" step="0.01" placeholder="例: 0">
+          <p class="add-form-hint">ベースマップをこの角度(度)で整列させてから座標定義を作成します。この値はprovisional(暫定)な向きであり、正しいGlobal方位を表す必要はありません(WALL平面からの自動推定は今回未対応)。下のpreviewでBase Map・Local X/Y/Z軸・生成予定boundsを確認してください。minimum voxel sizeは0.03m(3cm)に固定されています。</p>
+
+          <div class="rotation-preview-toolbar">
+            <button type="button" class="add-form-cancel rotation-preview-btn" id="btnRotationPreviewReset">Reset</button>
+            <button type="button" class="add-form-cancel rotation-preview-btn" id="btnRotationPreviewFitView">Fit View</button>
+            <span class="rotation-preview-legend">
+              <span class="rp-swatch" style="background:#e63946;"></span>Local X
+              <span class="rp-swatch" style="background:#2a9d3f;"></span>Local Y
+              <span class="rp-swatch" style="background:#2f6fed;"></span>Local Z
+              <span class="rp-swatch" style="background:#f5a623;"></span>bounds(予定)
+            </span>
+          </div>
+          <div id="rotationPreviewHolder" style="width:100%; height:320px; border:1px solid var(--border); border-radius:6px; overflow:hidden;"></div>
+          <div class="rotation-preview-readout" id="rotationPreviewReadout"></div>
+
+          <div class="add-form-actions">
+            <button class="add-form-submit" id="btnSubmitLocalSpace">Generate Local Space</button>
+            <button class="add-form-cancel" id="btnBackToStep2">戻る</button>
+          </div>
+        </div>
       </div>
       <div class="floor-groups" id="floorGroups"></div>
     </div>
@@ -238,6 +426,8 @@
     <div class="mode-tabs">
       <div class="mode-tab active" data-mode="viewer">ビューワモード</div>
       <div class="mode-tab" data-mode="add">追加モード(ラフレジストレーション)</div>
+      <div class="mode-tab" data-mode="nodal">Nodal Information</div>
+      <div class="mode-tab" data-mode="regresult">Registration Result</div>
     </div>
 
     <div class="viewer-wrap" id="viewerModeWrap">
@@ -253,6 +443,9 @@
       </div>
       <div class="viewer-side">
         <div class="space-info" id="spaceInfo"></div>
+        <label style="display:flex; align-items:center; gap:6px; margin-bottom:10px; font-size:13px; cursor:pointer;">
+          <input type="checkbox" id="chkShowSpatialState"> Spatial State表示(実データが無い空間はデモ表示になります)
+        </label>
         <div class="side-label">色分け</div>
         <div class="color-mode-toggle">
           <button id="btnColorState" class="active">状態</button>
@@ -261,12 +454,46 @@
         <div class="side-label">凡例</div>
         <div id="legend"></div>
         <div class="legend-note">NEVER_OBSERVED / SCAN_COVERED のボクセルは、証拠がまだ無いため描画していません。</div>
+
+        <div class="side-label" style="margin-top:22px;">Spatial ID voxel</div>
+        <label class="add-form-label" for="selSpatialVoxelZoom" style="margin-bottom:4px;">表示level</label>
+        <select id="selSpatialVoxelZoom" style="width:100%; margin-bottom:10px; padding:4px;"></select>
+        <label class="add-form-label" for="selSpatialVoxelColorMode" style="margin-bottom:4px;">Color</label>
+        <select id="selSpatialVoxelColorMode" style="width:100%; margin-bottom:10px; padding:4px;">
+          <option value="DEFAULT" selected>Default</option>
+          <option value="STRUCTURAL_LABEL">Structural Label</option>
+        </select>
+        <label style="display:flex; align-items:center; gap:6px; margin-bottom:6px; font-size:13px; cursor:pointer;">
+          <input type="checkbox" id="chkShowSpatialVoxels"> Voxel表示
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; margin-bottom:6px; font-size:13px; cursor:pointer;">
+          <input type="checkbox" id="chkShowPointCloud"> 点群表示
+        </label>
+        <div id="spatialVoxelStatus" class="legend-note" style="margin-top:4px;"></div>
       </div>
     </div>
 
     <div id="addModeWrap" class="add-mode-wrap" style="display:none;">
       <!-- registration-controller.js がこの中身を構築する -->
     </div>
+
+    <div id="nodalModeWrap" class="add-mode-wrap" style="display:none;">
+      <!-- nodal/nodal-panel.js がこの中身を構築する(ロードマップPhase 3.8) -->
+    </div>
+
+    <div id="regResultModeWrap" class="add-mode-wrap" style="display:none;">
+      <!-- registration/registration-result-panel.js がこの中身を構築する(2026-09-02) -->
+    </div>
+  </div>
+
+  <!-- 画面3: Integrated View(ロードマップPhase 3.10) -->
+  <div class="screen-detail" id="screenIntegrated" style="display:none;">
+    <!-- integrated/integrated-view.js がこの中身を構築する -->
+  </div>
+
+  <!-- 画面4: Spatial Network View -->
+  <div class="screen-detail" id="screenSpatialNetwork" style="display:none;">
+    <!-- spatial-network/spatial-network-view.js がこの中身を構築する -->
   </div>
 
 </div>
@@ -283,48 +510,44 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { initRegistrationMode } from './registration/registration-controller.js';
-import { postToServerHandler } from './registration/pointcloud-io.js';
+import { postToServerHandler, loadPointCloud, loadPointCloudFromURL, loadBaseMapManifest } from './registration/pointcloud-io.js';
+import { createPlaneViewer, planeColor } from './registration/plane-viewer.js';
+import { createRotationPreviewViewer } from './registration/rotation-preview-viewer.js';
+import { initNodalPanel } from './nodal/nodal-panel.js';
+import { initRegistrationResultPanel } from './registration/registration-result-panel.js';
+import { initIntegratedView } from './integrated/integrated-view.js';
+import { initSpatialNetworkView } from './spatial-network/spatial-network-view.js';
+import { toDisplayCoordinates } from './shared/display-coordinates.js';
+import { localSpatialIdToWorldCenter } from './shared/local-spatial-id.js';
+import { VIEWER_BACKGROUND_COLOR } from './shared/viewer-theme.js';
+import {
+  fetchSpatialState, colorForPresence, colorForMobility, isRenderablePresence,
+  PRESENCE_LEGEND, MOBILITY_LEGEND,
+} from './shared/spatial-state-client.js';
 
 /* ============================================================
-   1. ダミーデータ(ERスキーマに沿った型)
+   1. BUILDING / LOCAL_SPACE(サーバー永続化データ、backend/registry.py)
    ============================================================ */
 
-// BUILDING(実際のケースに合わせて、1件だけに絞る)
-const buildings = [
-  { building_id: "ichigaya_tamachi", real_estate_number: "未設定", name: "市ヶ谷田町校舎", address: "" },
-];
+// 以前はここにハードコードしていたが、GUIから「建物を追加」→「ローカル空間を
+// 追加」できるようにするため、backend/server.py の /api/buildings ・
+// /api/buildings/<id>/local-spaces から都度取得する形に変更した。
+let buildings = [];
+let localSpacesByBuilding = {}; // building_id -> ローカル空間配列(取得済みぶんのキャッシュ)
 
-// LOCAL_SPACE(tokutei_codeは "G" + 階 + 部屋番号、という独自解釈の一例)
-function makeSpaces(buildingId, floors, roomsPerFloor) {
-  const spaces = [];
-  for (let f = 1; f <= floors; f++) {
-    for (let r = 1; r <= roomsPerFloor; r++) {
-      spaces.push({
-        space_id: `${buildingId}-f${f}-r${r}`,
-        building_id: buildingId,
-        tokutei_code: `G${f}0${r}`,
-        floor: f,
-        zoom_level: 12,
-        registered_at: "2026-07-20T09:00:00+09:00",
-      });
-    }
-  }
-  return spaces;
+async function fetchBuildings() {
+  const res = await fetch('/api/buildings');
+  if (!res.ok) throw new Error(`建物一覧の取得に失敗しました(status=${res.status})`);
+  const data = await res.json();
+  buildings = data.buildings || [];
 }
-// 実際に持っているデータ(G002)だけを表示する。階は仮に1階としている
-// (実際の階が分かれば tokutei_code/floor を書き換えてください)。
-const localSpacesByBuilding = {
-  ichigaya_tamachi: [
-    {
-      space_id: "ichigaya_tamachi-G002",
-      building_id: "ichigaya_tamachi",
-      tokutei_code: "G002",
-      floor: 1,
-      zoom_level: 12,
-      registered_at: "2026-07-20T09:00:00+09:00",
-    },
-  ],
-};
+
+async function fetchLocalSpaces(buildingId) {
+  const res = await fetch(`/api/buildings/${encodeURIComponent(buildingId)}/local-spaces`);
+  if (!res.ok) throw new Error(`ローカル空間一覧の取得に失敗しました(status=${res.status})`);
+  const data = await res.json();
+  localSpacesByBuilding[buildingId] = data.local_spaces || [];
+}
 
 // SPATIAL_VOXEL + VOXEL_STATE + VOXEL_MOBILITY を、選択したローカル空間ごとに合成生成する
 // (本来は空間IDごとの永続テーブルから取得する想定。ここではビューワが受け取るべき
@@ -341,16 +564,16 @@ function generateVoxelsForSpace(spaceId) {
 
   for (let x = 0; x < nx; x++) {
     for (let y = 0; y < ny; y++) {
-      // 床(z=0): 全面OCCUPIED, 構造ラベルFLOOR, 静的
+      // 床(z=0): 全面PRESENT, 構造ラベルFLOOR, 静的
       voxels.push({ spatial_id: `${spaceId}/0/${x}/${y}`, x, y, z: 0,
-        state: "OCCUPIED", mobility_flag: "STATIC", structural_label: "FLOOR" });
+        presence: "PRESENT", mobility: "STATIC", structural_label: "FLOOR" });
 
-      // 壁(外周, z=1..4): OCCUPIED, 構造ラベルWALL, 静的
+      // 壁(外周, z=1..4): PRESENT, 構造ラベルWALL, 静的
       const isWallXY = (x === 0 || x === nx - 1 || y === 0 || y === ny - 1);
       if (isWallXY) {
         for (let z = 1; z <= 4; z++) {
           voxels.push({ spatial_id: `${spaceId}/${z}/${x}/${y}`, x, y, z,
-            state: "OCCUPIED", mobility_flag: "STATIC", structural_label: "WALL" });
+            presence: "PRESENT", mobility: "STATIC", structural_label: "WALL" });
         }
       }
     }
@@ -361,15 +584,15 @@ function generateVoxelsForSpace(spaceId) {
   for (let dx = -2; dx <= 2; dx++) {
     for (let dy = -2; dy <= 2; dy++) {
       voxels.push({ spatial_id: `${spaceId}/1/${cx+dx}/${cy+dy}`, x: cx+dx, y: cy+dy, z: 1,
-        state: "OCCUPIED", mobility_flag: "DYNAMIC", structural_label: null });
+        presence: "PRESENT", mobility: "DYNAMIC", structural_label: null });
     }
   }
 
-  // 隅の方に「消失した物体」(DECAYED)を置く(かつてOCCUPIEDだったが今は無い)
+  // 隅の方に「消失した物体」(ABSENT)を置く(かつてPRESENTだったが今は無い)
   for (let dx = 0; dx < 2; dx++) {
     for (let dy = 0; dy < 2; dy++) {
       voxels.push({ spatial_id: `${spaceId}/1/${2+dx}/${2+dy}`, x: 2+dx, y: 2+dy, z: 1,
-        state: "DECAYED", mobility_flag: "DYNAMIC", structural_label: null });
+        presence: "ABSENT", mobility: "DYNAMIC", structural_label: null });
     }
   }
 
@@ -378,10 +601,14 @@ function generateVoxelsForSpace(spaceId) {
     const rx = 3 + Math.floor(rand(i, 1, 0) * (nx - 6));
     const ry = 3 + Math.floor(rand(i, 2, 0) * (ny - 6));
     voxels.push({ spatial_id: `${spaceId}/2/${rx}/${ry}`, x: rx, y: ry, z: 2,
-      state: "OCCUPIED", mobility_flag: rand(i, 3, 0) > 0.5 ? "STATIC" : "PENDING", structural_label: null });
+      presence: "PRESENT", mobility: rand(i, 3, 0) > 0.5 ? "STATIC" : "PENDING", structural_label: null });
   }
 
-  return voxels;
+  // デモ用モックは実寸座標系とは無関係(x/y/zは1単位=1インデックスの
+  // 小さな固定スケール配置のまま)。voxel_size=1を付け、buildMeshes()が
+  // 実データ・モックのどちらでも同じ「voxel_size × 表示比率」の計算式で
+  // 箱の大きさを決められるようにする(2026-09-02)。
+  return voxels.map(v => ({ ...v, voxel_size: 1 }));
 }
 
 /* ============================================================
@@ -395,8 +622,18 @@ const floorGroupsEl = document.getElementById('floorGroups');
 const spacePaneTitle = document.getElementById('spacePaneTitle');
 const spacePaneCount = document.getElementById('spacePaneCount');
 
-let activeBuildingId = buildings[0].building_id;
+let activeBuildingId = null;
 let searchQuery = '';
+
+// 建物を切り替える。ローカル空間一覧が未取得ならAPIから取得してから描画する
+async function selectBuilding(buildingId) {
+  activeBuildingId = buildingId;
+  renderBuildingList();
+  if (!localSpacesByBuilding[buildingId]) {
+    try { await fetchLocalSpaces(buildingId); } catch (e) { console.error(e); }
+  }
+  renderSpaceGrid();
+}
 
 function renderBuildingList() {
   buildingTotalEl.textContent = `${buildings.length}件`;
@@ -414,7 +651,7 @@ function renderBuildingList() {
     const el = document.createElement('div');
     el.className = 'building-item' + (b.building_id === activeBuildingId ? ' active' : '');
     el.innerHTML = `${b.name}<span class="re-num">${b.real_estate_number}</span>`;
-    el.onclick = () => { activeBuildingId = b.building_id; renderBuildingList(); renderSpaceGrid(); };
+    el.onclick = () => { selectBuilding(b.building_id); };
     buildingListEl.appendChild(el);
   });
 }
@@ -426,8 +663,8 @@ buildingSearchEl.addEventListener('input', (e) => {
   if (q) {
     const filtered = buildings.filter(b => b.name.toLowerCase().includes(q) || b.real_estate_number.includes(q));
     if (filtered.length && !filtered.some(b => b.building_id === activeBuildingId)) {
-      activeBuildingId = filtered[0].building_id;
-      renderSpaceGrid();
+      selectBuilding(filtered[0].building_id);
+      return;
     }
   }
   renderBuildingList();
@@ -441,6 +678,12 @@ function escapeHtml(s) {
 
 function renderSpaceGrid() {
   const building = buildings.find(b => b.building_id === activeBuildingId);
+  if (!building) {
+    spacePaneTitle.textContent = '整備中ローカル空間';
+    spacePaneCount.textContent = '';
+    floorGroupsEl.innerHTML = `<div class="empty-state">左の一覧から建物を選択するか、建物を追加してください</div>`;
+    return;
+  }
   spacePaneTitle.textContent = `整備中ローカル空間 — ${building.name}`;
   const spaces = localSpacesByBuilding[activeBuildingId] || [];
   spacePaneCount.textContent = `${spaces.length}件`;
@@ -463,17 +706,443 @@ function renderSpaceGrid() {
       const card = document.createElement('div');
       card.className = 'space-card';
       card.innerHTML = `
+        <button class="space-card-delete-btn" type="button" title="このLocal Spaceを削除">✕</button>
         <div class="code">${s.tokutei_code}</div>
         <div class="zoom">zoom ${s.zoom_level}</div>
         <div class="badge">整備済み</div>
       `;
       card.onclick = () => openDetail(s);
+      card.querySelector('.space-card-delete-btn').addEventListener('click', (ev) => {
+        ev.stopPropagation(); // カード全体のopenDetailへの誤遷移を防ぐ
+        deleteLocalSpace(s);
+      });
       grid.appendChild(card);
     });
     group.appendChild(grid);
     floorGroupsEl.appendChild(group);
   });
 }
+
+/**
+ * Local Spaceを削除する(2026-09-03追加、誤操作防止強化版)。
+ * ×ボタン単クリックでは絶対にDELETEしない: GET .../deletion-preview で
+ * dry-run結果を取得したうえで、専用モーダル(openDeleteSpaceModal)を開くだけ。
+ * 実際のDELETEは、モーダル内でtokutei_codeを一字一句入力し終えて初めて
+ * 押せるようになる「削除を実行」ボタンのクリックでのみ発行される
+ * (window.confirm()は廃止した)。
+ */
+async function deleteLocalSpace(space) {
+  let preview;
+  try {
+    const res = await fetch(`/api/local-spaces/${encodeURIComponent(space.space_id)}/deletion-preview`);
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `status=${res.status}`);
+    preview = await res.json();
+  } catch (e) {
+    alert(`削除内容の確認に失敗しました: ${e.message}`);
+    return;
+  }
+  openDeleteSpaceModal(space, preview);
+}
+
+function closeDeleteSpaceModal() {
+  const overlay = document.getElementById('deleteSpaceModalOverlay');
+  if (overlay) overlay.remove();
+}
+
+/**
+ * 削除確認専用モーダル。deletion-previewの内容(アーカイブ対象・キャッシュ
+ * 削除件数・Nodal影響件数)を表示し、最終確認としてtokutei_codeの手入力を
+ * 要求する(完全一致するまで「削除を実行」はdisabled)。Enterキー単体では
+ * 何も実行されない(<form>を使わず、Enterのdefault動作も明示的に無効化)。
+ */
+function openDeleteSpaceModal(space, preview) {
+  closeDeleteSpaceModal(); // 多重表示防止
+
+  const building = buildings.find(b => b.building_id === space.building_id);
+  const label = building ? `${building.name}(${space.tokutei_code})` : space.tokutei_code;
+  const archiveFileCount = preview.archive_items.reduce((sum, i) => sum + i.file_count, 0);
+  const cacheFileCount = preview.cache_invalidations.reduce((sum, i) => sum + i.matched_file_count, 0);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-modal-overlay';
+  overlay.id = 'deleteSpaceModalOverlay';
+  overlay.innerHTML = `
+    <div class="delete-modal" role="dialog" aria-modal="true" aria-labelledby="deleteSpaceModalTitle">
+      <div class="delete-modal-title" id="deleteSpaceModalTitle">Local Spaceを削除しますか?</div>
+      <table class="delete-modal-info">
+        <tr><th>Local Space</th><td>${escapeHtml(label)}</td></tr>
+        <tr><th>space_id</th><td>${escapeHtml(space.space_id)}</td></tr>
+        <tr><th>tokutei_code</th><td>${escapeHtml(space.tokutei_code)}</td></tr>
+        <tr><th>archive対象</th><td>${preview.archive_items.length}カテゴリ / ${archiveFileCount}ファイル</td></tr>
+        <tr><th>cache削除</th><td>${cacheFileCount}ファイル</td></tr>
+        <tr><th>Nodal影響</th><td>Endpoint ${preview.nodal_endpoints_affected.length}件 / Connection ${preview.nodal_connections_affected.length}件</td></tr>
+      </table>
+      <div class="delete-modal-warning">
+        このLocal Spaceはactive systemから削除されます。Registration Result等の実験記録は削除せず、
+        <code>backend/data/_archived_local_spaces/</code> へarchiveされます(完全な破棄ではありません)。
+      </div>
+      <label class="delete-modal-confirm-label">
+        最終確認: tokutei_code「<b>${escapeHtml(space.tokutei_code)}</b>」を入力してください
+        <input type="text" id="deleteSpaceModalInput" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="delete-modal-actions">
+        <button type="button" class="delete-modal-cancel-btn" id="deleteSpaceModalCancelBtn">Cancel</button>
+        <button type="button" class="delete-modal-confirm-btn" id="deleteSpaceModalConfirmBtn" disabled>削除を実行</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const input = overlay.querySelector('#deleteSpaceModalInput');
+  const confirmBtn = overlay.querySelector('#deleteSpaceModalConfirmBtn');
+  const cancelBtn = overlay.querySelector('#deleteSpaceModalCancelBtn');
+
+  input.addEventListener('input', () => {
+    confirmBtn.disabled = input.value !== space.tokutei_code; // 完全一致のみ有効化
+  });
+  input.addEventListener('keydown', (ev) => {
+    // <form>を使っていないためEnterで暗黙にsubmitされることは無いが、
+    // 「Enterキーだけでは削除されない」ことを明示的に保証するため、
+    // Enterのdefault動作自体をここで潰す(ボタンクリックのみが削除の入口)。
+    if (ev.key === 'Enter') ev.preventDefault();
+  });
+  cancelBtn.addEventListener('click', closeDeleteSpaceModal);
+  overlay.addEventListener('click', (ev) => { if (ev.target === overlay) closeDeleteSpaceModal(); });
+
+  confirmBtn.addEventListener('click', async () => {
+    if (input.value !== space.tokutei_code) return; // disabled取りこぼし対策の二重チェック
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '削除中...';
+    try {
+      const res = await fetch(`/api/local-spaces/${encodeURIComponent(space.space_id)}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `status=${res.status}`);
+    } catch (e) {
+      alert(`削除に失敗しました(アーカイブが確認できなかった場合、元のデータは変更されていません): ${e.message}`);
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = '削除を実行';
+      return;
+    }
+    // DELETE成功後にのみ、モーダルを閉じて一覧・Viewerを更新する
+    closeDeleteSpaceModal();
+    if (currentSpace?.space_id === space.space_id) {
+      closeDetail();
+    }
+    await fetchLocalSpaces(activeBuildingId);
+    renderSpaceGrid();
+  });
+
+  input.focus();
+}
+
+/* ============================================================
+   2.5 建物・ローカル空間の追加(GUIの一気通貫フロー)
+   ============================================================ */
+
+const addBuildingFormEl = document.getElementById('addBuildingForm');
+document.getElementById('btnAddBuilding').onclick = () => {
+  addBuildingFormEl.style.display = addBuildingFormEl.style.display === 'none' ? 'flex' : 'none';
+};
+document.getElementById('btnCancelBuilding').onclick = () => { addBuildingFormEl.style.display = 'none'; };
+document.getElementById('btnSubmitBuilding').onclick = async () => {
+  const name = document.getElementById('newBuildingName').value.trim();
+  const realEstateNumber = document.getElementById('newBuildingReNum').value.trim();
+  const address = document.getElementById('newBuildingAddress').value.trim();
+  if (!name) { alert('建物名は必須です'); return; }
+
+  const btn = document.getElementById('btnSubmitBuilding');
+  btn.disabled = true; btn.textContent = '追加中…';
+  try {
+    const res = await fetch('/api/buildings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, real_estate_number: realEstateNumber, address }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `status=${res.status}`);
+
+    await fetchBuildings();
+    document.getElementById('newBuildingName').value = '';
+    document.getElementById('newBuildingReNum').value = '';
+    document.getElementById('newBuildingAddress').value = '';
+    addBuildingFormEl.style.display = 'none';
+    await selectBuilding(data.building.building_id);
+  } catch (e) {
+    alert(`建物の追加に失敗しました: ${e.message}`);
+  } finally {
+    btn.disabled = false; btn.textContent = '追加';
+  }
+};
+
+/* ------------------------------------------------------------
+   ローカル空間追加フロー: Base Map選択 -> Detect Planes ->
+   Plane確認・ラベル修正 -> rotation入力・確認 -> Generate Local Space
+   ------------------------------------------------------------ */
+const addLocalSpaceFormEl = document.getElementById('addLocalSpaceForm');
+const spaceStep1El = document.getElementById('spaceStep1');
+const spaceStep2El = document.getElementById('spaceStep2');
+const spaceStep3El = document.getElementById('spaceStep3');
+
+// Detect Planes〜Generate Local Spaceの間、この画面内でだけ保持する一時状態
+// (どのstepでも参照できるよう、フォームの外側=モジュールスコープに置く)。
+let detectedSpaceId = null;
+let detectedPlanes = []; // [{...Plane, }] サーバーのPlane.to_dict()相当
+let selectedPlaneIndex = null;
+let planeViewer = null;
+let detectedBasePositions = null; // Detect Planes時に読み込んだBase Mapの生ワールド座標
+                                   // (Float32Array)。rotation previewで使い回す(再アップロード・再変換しない)。
+let rotationPreviewViewer = null;
+
+function showStep(n) {
+  spaceStep1El.style.display = n === 1 ? 'block' : 'none';
+  spaceStep2El.style.display = n === 2 ? 'block' : 'none';
+  spaceStep3El.style.display = n === 3 ? 'block' : 'none';
+}
+
+// Detect Planes成功後、特定コード・ベースマップファイルをロックする
+// (Plane結果がspace_id = building_id-tokutei_codeに紐付いているため、
+// 変更するには必ずbtnResetPlaneDetectionで明示的にResetしてから、という
+// フローを強制する。ユーザー指示: 2026-08-29)。
+function setTokuteiCodeLocked(locked) {
+  document.getElementById('newSpaceCode').disabled = locked;
+  document.getElementById('newSpaceFile').disabled = locked;
+  document.getElementById('btnDetectPlanes').disabled = locked;
+  document.getElementById('spaceStep1LockedNotice').style.display = locked ? 'block' : 'none';
+  document.getElementById('btnResetPlaneDetection').style.display = locked ? 'inline-block' : 'none';
+}
+
+function resetAddLocalSpaceFlow() {
+  document.getElementById('newSpaceCode').value = '';
+  document.getElementById('newSpaceFloor').value = '1';
+  document.getElementById('newSpaceRotationDegree').value = '';
+  document.getElementById('newSpaceFile').value = '';
+  detectedSpaceId = null;
+  detectedPlanes = [];
+  selectedPlaneIndex = null;
+  detectedBasePositions = null;
+  document.getElementById('rotationPreviewReadout').textContent = '';
+  setTokuteiCodeLocked(false);
+  showStep(1);
+}
+
+document.getElementById('btnAddLocalSpace').onclick = () => {
+  if (!activeBuildingId) { alert('先に建物を選択(または追加)してください'); return; }
+  if (addLocalSpaceFormEl.style.display === 'none') {
+    resetAddLocalSpaceFlow();
+    addLocalSpaceFormEl.style.display = 'flex';
+  } else {
+    addLocalSpaceFormEl.style.display = 'none';
+  }
+};
+document.getElementById('btnCancelLocalSpace').onclick = () => { addLocalSpaceFormEl.style.display = 'none'; };
+document.getElementById('btnBackToStep1').onclick = () => showStep(1);
+document.getElementById('btnBackToStep2').onclick = () => showStep(2);
+document.getElementById('btnResetPlaneDetection').onclick = () => {
+  if (!window.confirm('平面抽出結果を破棄して、特定コード・ベースマップを変更しますか?\n' +
+                       '(古いspace_idのPlaneは新しいspace_idへ引き継がれません)')) {
+    return;
+  }
+  resetAddLocalSpaceFlow();
+};
+
+const PLANE_LABEL_OPTIONS = ['FLOOR', 'CEILING', 'WALL', 'IGNORE', 'UNASSIGNED'];
+
+function renderPlaneList() {
+  const listEl = document.getElementById('planeList');
+  listEl.innerHTML = detectedPlanes.map((p, i) => `
+    <div class="plane-row" data-idx="${i}" style="padding:8px 10px; border-bottom:1px solid var(--border-soft); cursor:pointer; display:flex; align-items:center; gap:8px; ${i === selectedPlaneIndex ? 'background:var(--accent-soft);' : ''}">
+      <span style="width:10px; height:10px; border-radius:50%; background: rgb(${planeColor(i).map(v => Math.round(v * 255)).join(',')}); flex-shrink:0;"></span>
+      <span style="flex:1;">${p.plane_id}(${p.point_count}点)</span>
+      <span style="font-size:11px; color:var(--text-dim);">${p.confirmed_label}</span>
+    </div>
+  `).join('') || '<div class="add-form-hint" style="padding:10px;">平面が抽出されませんでした</div>';
+
+  listEl.querySelectorAll('.plane-row').forEach(row => {
+    row.onclick = () => selectPlane(parseInt(row.dataset.idx, 10));
+  });
+}
+
+function renderPlaneDetail() {
+  const detailEl = document.getElementById('planeDetail');
+  if (selectedPlaneIndex == null) {
+    detailEl.innerHTML = '<span class="add-form-hint">左のリストから平面を選択してください</span>';
+    return;
+  }
+  const p = detectedPlanes[selectedPlaneIndex];
+  detailEl.innerHTML = `
+    <div class="row"><span class="k">plane_id</span><span class="v">${p.plane_id}</span></div>
+    <div class="row"><span class="k">normal</span><span class="v">${p.normal.map(v => v.toFixed(3)).join(', ')}</span></div>
+    <div class="row"><span class="k">centroid</span><span class="v">${p.centroid.map(v => v.toFixed(3)).join(', ')}</span></div>
+    <div class="row"><span class="k">point_count</span><span class="v">${p.point_count}</span></div>
+    <div class="row"><span class="k">suggested_label</span><span class="v">${p.suggested_label}</span></div>
+    <label class="add-form-label" for="planeConfirmedLabelSelect">confirmed_label</label>
+    <select id="planeConfirmedLabelSelect">
+      ${PLANE_LABEL_OPTIONS.map(l => `<option value="${l}" ${l === p.confirmed_label ? 'selected' : ''}>${l}</option>`).join('')}
+    </select>
+  `;
+  document.getElementById('planeConfirmedLabelSelect').onchange = async (ev) => {
+    const newLabel = ev.target.value;
+    try {
+      const res = await fetch(`/api/planes/${encodeURIComponent(detectedSpaceId)}/${encodeURIComponent(p.plane_id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmed_label: newLabel }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `status=${res.status}`);
+      p.confirmed_label = newLabel;
+      renderPlaneList();
+    } catch (e) {
+      alert(`ラベルの更新に失敗しました: ${e.message}`);
+      ev.target.value = p.confirmed_label;
+    }
+  };
+}
+
+function selectPlane(idx) {
+  selectedPlaneIndex = idx;
+  renderPlaneList();
+  renderPlaneDetail();
+  if (planeViewer) planeViewer.highlightPlane(idx);
+}
+
+document.getElementById('btnDetectPlanes').onclick = async () => {
+  const tokuteiCode = document.getElementById('newSpaceCode').value.trim();
+  const fileInput = document.getElementById('newSpaceFile');
+  const file = fileInput.files[0];
+
+  if (!tokuteiCode) { alert('特定コードは必須です'); return; }
+  if (!file) { alert('ベースマップファイル(.las / .ply)を選択してください'); return; }
+
+  const btn = document.getElementById('btnDetectPlanes');
+  const originalLabel = btn.textContent;
+  btn.disabled = true; btn.textContent = '平面抽出中…(数秒〜数十秒かかります)';
+  try {
+    const buffer = await file.arrayBuffer();
+    const res = await fetch('/api/planes/detect', {
+      method: 'POST',
+      headers: { 'X-Building-Id': activeBuildingId, 'X-Tokutei-Code': tokuteiCode, 'X-Filename': file.name },
+      body: buffer,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `status=${res.status}`);
+
+    detectedSpaceId = data.space_id;
+    detectedPlanes = data.planes;
+    selectedPlaneIndex = null;
+
+    const { positions } = await loadPointCloud(file);
+    const pointCount = positions.length / 3;
+    const planeIndexPerPoint = new Int32Array(pointCount).fill(-1);
+    detectedPlanes.forEach((p, i) => { p.point_indices.forEach(idx => { planeIndexPerPoint[idx] = i; }); });
+
+    if (!planeViewer) planeViewer = createPlaneViewer(document.getElementById('planeViewerHolder'));
+    planeViewer.setPointsWithPlanes(positions, planeIndexPerPoint);
+
+    // rotation preview(ステップ3)で再アップロード・再変換せずに使い回す
+    detectedBasePositions = positions;
+
+    renderPlaneList();
+    renderPlaneDetail();
+    setTokuteiCodeLocked(true); // Detect Planes成功後は特定コード・ファイルをロックする
+    btn.textContent = originalLabel;
+    showStep(2);
+  } catch (e) {
+    alert(`平面抽出に失敗しました: ${e.message}`);
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+};
+
+/** rotation previewの現在の入力値(度)を読み、Local軸・bounds wireframeを
+ * 再計算・再描画する。Base Map自体は一切変更しない(Detect Planes時に
+ * 読み込み済みのdetectedBasePositionsをそのまま使い回すだけ)。 */
+function updateRotationPreview() {
+  if (!detectedBasePositions || !rotationPreviewViewer) return;
+  const degreeRaw = document.getElementById('newSpaceRotationDegree').value.trim();
+  const degree = degreeRaw === '' ? 0 : parseFloat(degreeRaw);
+  if (Number.isNaN(degree)) return;
+  const rad = (degree * Math.PI) / 180;
+  const result = rotationPreviewViewer.update(rad);
+  renderRotationPreviewReadout(result);
+}
+
+function renderRotationPreviewReadout(result) {
+  const el = document.getElementById('rotationPreviewReadout');
+  if (!result) { el.textContent = ''; return; }
+  const fmt = (v) => v.toFixed(4);
+  const boundsText = result.bounds.map((p) => `(${p.map(fmt).join(', ')})`).join('\n  ');
+  el.textContent =
+    `rotation: ${fmt(result.degree)}° (${fmt(result.rad)} rad)\n` +
+    `origin(予定): (${result.origin.map(fmt).join(', ')})\n` +
+    `bounds一辺(正方形化後): ${fmt(result.length)} m / 高さ(Z extent): ${fmt(result.height)} m\n` +
+    `bounds(予定、8頂点):\n  ${boundsText}`;
+}
+
+document.getElementById('btnGoToRotationStep').onclick = () => {
+  showStep(3);
+  if (!detectedBasePositions) return;
+  if (!rotationPreviewViewer) rotationPreviewViewer = createRotationPreviewViewer(document.getElementById('rotationPreviewHolder'));
+  rotationPreviewViewer.setBasePositions(detectedBasePositions);
+  updateRotationPreview();
+  rotationPreviewViewer.fitView();
+};
+
+document.getElementById('newSpaceRotationDegree').addEventListener('input', updateRotationPreview);
+
+document.getElementById('btnRotationPreviewReset').onclick = () => {
+  document.getElementById('newSpaceRotationDegree').value = '0';
+  updateRotationPreview();
+};
+
+document.getElementById('btnRotationPreviewFitView').onclick = () => {
+  if (rotationPreviewViewer) rotationPreviewViewer.fitView();
+};
+
+document.getElementById('btnSubmitLocalSpace').onclick = async () => {
+  const floor = document.getElementById('newSpaceFloor').value.trim() || '1';
+  const tokuteiCode = document.getElementById('newSpaceCode').value.trim();
+  const rotationDegree = document.getElementById('newSpaceRotationDegree').value.trim();
+
+  if (rotationDegree === '') { alert('回転(度)は必須です'); return; }
+
+  const btn = document.getElementById('btnSubmitLocalSpace');
+  const originalLabel = btn.textContent;
+  btn.disabled = true; btn.textContent = '生成中…(ファイルサイズに応じて数秒〜数十秒かかります)';
+  try {
+    const headers = {
+      'X-Building-Id': activeBuildingId,
+      'X-Tokutei-Code': tokuteiCode,
+      'X-Floor': floor,
+      'X-Rotation-Degree': rotationDegree,
+    };
+    // 本文は送らない(ベースマップは既に/api/planes/detectでアップロード済み)。
+    const res = await fetch('/api/local-spaces', { method: 'POST', headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `status=${res.status}`);
+
+    await fetchLocalSpaces(activeBuildingId);
+    addLocalSpaceFormEl.style.display = 'none';
+    resetAddLocalSpaceFlow();
+    renderSpaceGrid();
+
+    const s = data.space_definition_summary || {};
+    const boundsText = (s.bounds || []).map(p => `(${p.map(v => v.toFixed(2)).join(', ')})`).join('\n  ');
+    alert(
+      `ローカル空間を作成しました。\n\n` +
+      `Local Space ID: ${data.local_space.space_id}\n` +
+      `rotation: ${s.degree != null ? s.degree.toFixed(3) : '-'} 度\n` +
+      `minimum voxel size: ${s.min_voxel_size} m\n` +
+      `maximum voxel size: ${s.max_voxel_size} m\n` +
+      `zoom level count: ${s.zoom_level_count}\n` +
+      `bounds:\n  ${boundsText}\n\n` +
+      `plane数: ${data.plane_count} / structural voxel label数: ${data.voxel_label_count}`
+    );
+  } catch (e) {
+    alert(`ローカル空間の追加に失敗しました: ${e.message}`);
+  } finally {
+    btn.disabled = false; btn.textContent = originalLabel;
+  }
+};
 
 /* ============================================================
    3. 画面2: ローカル空間詳細(ビューワ / 追加モード)
@@ -502,6 +1171,33 @@ function openDetail(space) {
   `;
 
   loadVoxels(space.space_id);
+  clearSpatialVoxelObjects(); // 別のLocal Spaceを開いたら、前のspaceのSpatial ID voxel/点群は破棄する
+  populateSpatialVoxelZoomSelect(space.space_id); // このspace自身のunit-sizeからlevel選択肢を作る
+
+  // Nodal Informationタブ(ロードマップPhase 3.8)が既に開かれたことがあり、
+  // かつ現在表示中であれば、切り替えた新しいLocal Space/buildingの内容へ更新する。
+  const nodalWrapEl = document.getElementById('nodalModeWrap');
+  if (nodalPanelHandle && nodalWrapEl && nodalWrapEl.style.display !== 'none') {
+    nodalPanelHandle.refresh();
+  }
+
+  // 追加モード(ラフレジストレーション)タブも同様に、既に構築済みであれば
+  // 常に同期する(2026-09-02、Source複数選択のLocal Spaceごと管理・
+  // space_id誤POST対策)。表示中かどうかに関わらず呼んでよい(refresh()は
+  // 通信を伴わない軽量な状態更新のみ)。次にタブを開いたときに必ず現在の
+  // Local Space向けの一覧・ラベルになっている状態を保証する。
+  if (registrationHandle) {
+    registrationHandle.refresh();
+  }
+
+  // Registration Resultタブ(2026-09-02)が既に開かれたことがあり、かつ現在
+  // 表示中であれば、切り替えた新しいLocal Spaceの一覧へ更新する
+  // (nodalPanelHandleと同じパターン。表示中でなければ、次にタブを
+  // 開いたときにonclick側のrefresh()で最新化される)。
+  const regResultWrapEl = document.getElementById('regResultModeWrap');
+  if (regResultPanelHandle && regResultWrapEl && regResultWrapEl.style.display !== 'none') {
+    regResultPanelHandle.refresh();
+  }
 
   // 【重要】この画面はさっきまでdisplay:noneで隠れていたため、Three.jsの
   // 初期化時点ではcanvasHolderの幅・高さが0で、既定の小さいサイズのまま
@@ -516,25 +1212,151 @@ function closeDetail() {
   topbarSub.textContent = '— 整備済み建物からローカル空間を選択';
 }
 
-let registrationInitialized = false;
+/* ------------------------------------------------------------
+   画面3: Integrated View(ロードマップPhase 3.10)
+   Spatial Resolutionのderived resultを読むだけの表示専用画面。
+   ------------------------------------------------------------ */
+const screenIntegrated = document.getElementById('screenIntegrated');
+let integratedViewHandle = null; // {open(buildingId)} — initIntegratedView()の戻り値
+
+function openIntegratedView() {
+  if (!activeBuildingId) { alert('先に建物を選択してください'); return; }
+  screenList.style.display = 'none';
+  screenIntegrated.style.display = 'flex';
+  topbarTitle.innerHTML = `<span class="back-btn" id="ivBackBtn">← 一覧へ戻る</span> &nbsp; Integrated View`;
+  topbarSub.textContent = `building_id: ${activeBuildingId}`;
+  document.getElementById('ivBackBtn').onclick = closeIntegratedView;
+
+  if (!integratedViewHandle) {
+    integratedViewHandle = initIntegratedView(screenIntegrated);
+    // 3DでLocal Spaceを選択→サイドバーのactionから既存機能へ遷移する
+    // 薄いbridge(2026-09-05、Stage 1)。Integrated View自身は
+    // (actionId, spaceId)を渡すだけでnavigateしない——実際の遷移
+    // (openDetail・mode-tab切り替え)は既存ロジックをそのまま再利用する。
+    integratedViewHandle.onSpaceAction((actionId, spaceId) => {
+      const space = (localSpacesByBuilding[activeBuildingId] || [])
+        .find((s) => s.space_id === spaceId);
+      if (!space) return;
+      closeIntegratedView();
+      openDetail(space); // 常にviewerタブの状態で開く(既存動作)
+      if (actionId !== 'viewer') {
+        document.querySelector(`.mode-tab[data-mode="${actionId}"]`)?.click();
+      }
+    });
+    // Connect Spaces(Stage 2、2026-09-05)。Integrated View側は
+    // (spaceIdA, spaceIdB)を渡すだけで、connectionの作成・更新は
+    // 一切行わない。Aのdetail画面(nodalタブ)を開き、既存のNodal
+    // Information wizardへA/Bをpresetするだけの薄いbridge。
+    integratedViewHandle.onConnectSpaces(async (spaceIdA, spaceIdB) => {
+      const spaceA = (localSpacesByBuilding[activeBuildingId] || [])
+        .find((s) => s.space_id === spaceIdA);
+      if (!spaceA) return;
+      closeIntegratedView();
+      openDetail(spaceA);
+      document.querySelector('.mode-tab[data-mode="nodal"]')?.click();
+      // nodalPanelHandleの生成/直後のrefresh()はfire-and-forgetのため、
+      // state.localSpacesが確実に埋まってからpresetする(race対策、
+      // Stage 2 Plan参照)。
+      await nodalPanelHandle.refresh();
+      await nodalPanelHandle.presetWizardSpaces(spaceIdA, spaceIdB);
+    });
+  }
+  integratedViewHandle.open(activeBuildingId);
+}
+function closeIntegratedView() {
+  screenIntegrated.style.display = 'none';
+  screenList.style.display = 'flex';
+  topbarTitle.textContent = '建物一覧';
+  topbarSub.textContent = '— 整備済み建物からローカル空間を選択';
+}
+document.getElementById('btnOpenIntegratedView').onclick = openIntegratedView;
+
+/* ------------------------------------------------------------
+   画面4: Spatial Network View
+   Nodal Information/Spatial Resolutionを読むだけの表示専用画面
+   (Integrated Viewと同じ入口パターン)。
+   ------------------------------------------------------------ */
+const screenSpatialNetwork = document.getElementById('screenSpatialNetwork');
+let spatialNetworkViewHandle = null; // {open(buildingId)} — initSpatialNetworkView()の戻り値
+
+function openSpatialNetworkView() {
+  if (!activeBuildingId) { alert('先に建物を選択してください'); return; }
+  screenList.style.display = 'none';
+  screenSpatialNetwork.style.display = 'flex';
+  topbarTitle.innerHTML = `<span class="back-btn" id="snBackBtn">← 一覧へ戻る</span> &nbsp; Spatial Network View`;
+  topbarSub.textContent = `building_id: ${activeBuildingId}`;
+  document.getElementById('snBackBtn').onclick = closeSpatialNetworkView;
+
+  if (!spatialNetworkViewHandle) {
+    spatialNetworkViewHandle = initSpatialNetworkView(screenSpatialNetwork);
+  }
+  spatialNetworkViewHandle.open(activeBuildingId);
+}
+function closeSpatialNetworkView() {
+  screenSpatialNetwork.style.display = 'none';
+  screenList.style.display = 'flex';
+  topbarTitle.textContent = '建物一覧';
+  topbarSub.textContent = '— 整備済み建物からローカル空間を選択';
+}
+document.getElementById('btnOpenSpatialNetworkView').onclick = openSpatialNetworkView;
+
+let registrationHandle = null; // {dispose, refresh} — initRegistrationMode()の戻り値
+let nodalPanelHandle = null; // {refresh} — initNodalPanel()の戻り値(ロードマップPhase 3.8)
+let regResultPanelHandle = null; // {refresh} — initRegistrationResultPanel()の戻り値(2026-09-02)
 document.querySelectorAll('.mode-tab').forEach(tab => {
   tab.onclick = () => {
     document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-    const isViewer = tab.dataset.mode === 'viewer';
+    const mode = tab.dataset.mode;
+    const isViewer = mode === 'viewer';
+    const isAdd = mode === 'add';
+    const isNodal = mode === 'nodal';
+    const isRegResult = mode === 'regresult';
     document.getElementById('viewerModeWrap').style.display = isViewer ? 'flex' : 'none';
-    document.getElementById('addModeWrap').style.display = isViewer ? 'none' : 'flex';
+    document.getElementById('addModeWrap').style.display = isAdd ? 'flex' : 'none';
+    document.getElementById('nodalModeWrap').style.display = isNodal ? 'flex' : 'none';
+    document.getElementById('regResultModeWrap').style.display = isRegResult ? 'flex' : 'none';
     if (isViewer) requestAnimationFrame(() => requestAnimationFrame(resizeRenderer));
 
-    // 追加モードは初回表示時にだけ構築する(Three.jsのビューワを毎回作り直さない)
-    if (!isViewer && !registrationInitialized) {
-      registrationInitialized = true;
-      // サーバー(backend/server.py)へ送信する構成。ダウンロードに戻したい
-      // 場合は outputHandler を downloadHandler に差し替えるだけでよい。
-      initRegistrationMode(document.getElementById('addModeWrap'), {
-        outputHandler: postToServerHandler,
-        spaceId: currentSpace?.space_id ?? null,
-      });
+    // 追加モードは初回表示時にだけDOM構築する(Three.jsのビューワを毎回作り直さない)。
+    // spaceIdはgetterで渡し、currentSpaceを値でキャプチャしない(2026-09-02、
+    // space_id誤POST対策。別のLocal Spaceへ切り替えた後にタブを開き直しても、
+    // refresh()経由で最新のspace_idに追従する。openDetail()側のrefresh呼び出しと対)。
+    if (isAdd) {
+      if (!registrationHandle) {
+        // サーバー(backend/server.py)へ送信する構成。ダウンロードに戻したい
+        // 場合は outputHandler を downloadHandler に差し替えるだけでよい。
+        registrationHandle = initRegistrationMode(document.getElementById('addModeWrap'), {
+          outputHandler: postToServerHandler,
+          spaceId: () => currentSpace?.space_id ?? null,
+        });
+      } else {
+        registrationHandle.refresh();
+      }
+    }
+
+    // Nodal Informationタブ(ロードマップPhase 3.8)も初回だけDOMを構築する。
+    // currentSpaceを値でキャプチャせず、都度getterで読ませることで、
+    // 別のLocal Spaceに切り替えた後にタブを開き直しても最新のbuilding_id/
+    // space_idを参照できるようにする(openDetail()側のrefresh呼び出しと対)。
+    if (isNodal) {
+      if (!nodalPanelHandle) {
+        nodalPanelHandle = initNodalPanel(document.getElementById('nodalModeWrap'), () => currentSpace);
+      } else {
+        nodalPanelHandle.refresh();
+      }
+    }
+
+    // Registration Resultタブ(2026-09-02)も同じパターンで初回だけDOM構築。
+    // spaceIdはgetterで渡し、別のLocal Spaceへ切り替えた後でも最新のspace_idの
+    // 保存済みRegistration Resultを表示する。
+    if (isRegResult) {
+      if (!regResultPanelHandle) {
+        regResultPanelHandle = initRegistrationResultPanel(
+          document.getElementById('regResultModeWrap'), () => currentSpace?.space_id ?? null,
+        );
+      }
+      regResultPanelHandle.refresh(); // このタブを開くたびに最新の一覧を取得し直す
     }
   };
 });
@@ -543,29 +1365,17 @@ document.querySelectorAll('.mode-tab').forEach(tab => {
    4. 3Dビューワ(Three.js、InstancedMesh)
    ============================================================ */
 
-const STATE_COLOR = {
-  OCCUPIED: 0x4a7c74,
-  DECAYED: 0xd64545,
-  SCAN_COVERED: 0xcfcdc4,
-  NEVER_OBSERVED: 0xffffff,
-};
-const MOBILITY_COLOR = {
-  STATIC: 0x3a6ea5,
-  DYNAMIC: 0xd98c2b,
-  PENDING: 0x9a988e,
-};
+// 色・凡例(PRESENCE_LEGEND/MOBILITY_LEGEND)はshared/spatial-state-client.js
+// からimportしたものを使う。Read Model(presence/confidence/mobility)が
+// 返す語彙と、それに対応する色の意味づけは、このViewerではなくbackend
+// (spatial_state_view.py)側が決める(2026-09-02: Presentation/Read Model層の
+// 導入に伴い、STATE_COLOR/MOBILITY_COLOR/LEGENDのハードコードをここから除去)。
 
-const LEGEND = {
-  state: [
-    ["占有(OCCUPIED)", STATE_COLOR.OCCUPIED, false],
-    ["消失(DECAYED)", STATE_COLOR.DECAYED, true],
-  ],
-  mobility: [
-    ["静的(STATIC)", MOBILITY_COLOR.STATIC, false],
-    ["動的(DYNAMIC)", MOBILITY_COLOR.DYNAMIC, false],
-    ["判断保留(PENDING)", MOBILITY_COLOR.PENDING, false],
-  ],
-};
+// Spatial State voxelの表示サイズは、各voxelの物理voxel_size(そのLocal
+// Spatial IDが属するzoomのCoordinateDefinition.unit-sizeから決まる)に、
+// 隣接voxelを見分けやすくするための比率を掛けたものにする(2026-09-02修正)。
+// 物理サイズと無関係な固定値のcube sizeは使わない。
+const SPATIAL_STATE_VOXEL_DISPLAY_RATIO = 0.92;
 
 let renderer, scene, camera, controls, solidMesh, ghostMesh, currentVoxels = [];
 let colorMode = 'state';
@@ -578,7 +1388,7 @@ const mouse = new THREE.Vector2();
 
 function initThree() {
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xf5f4f1);
+  scene.background = new THREE.Color(VIEWER_BACKGROUND_COLOR);
 
   camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
   camera.position.set(...INITIAL_CAMERA_POS);
@@ -605,12 +1415,55 @@ function initThree() {
   window.addEventListener('resize', resizeRenderer);
   renderer.domElement.addEventListener('mousemove', onHover);
   document.getElementById('btnResetCamera').onclick = () => {
-    camera.position.set(...INITIAL_CAMERA_POS);
-    controls.target.set(...INITIAL_TARGET);
-    controls.update();
+    applyCameraView(currentResetView);
   };
 
   animate();
+}
+
+/* ------------------------------------------------------------
+   カメラの視点適用・自動フィット。
+   【原因調査(2026-08-29)】G002実データ(実寸フロア、約46m x 3m x 33m)を
+   ロードすると、カメラがINITIAL_CAMERA_POS/TARGET(旧モックデータ用、
+   14〜20単位規模のトイシーン向けに固定)のまま変わらないため、実寸の
+   建物のほぼ内部・至近距離にカメラが位置してしまう。近くの面が画面いっぱいに
+   映り、単一方向のDirectionalLightしか当たらない面(自己遮蔽側)は
+   ほぼ無灯状態になるため、「黒い巨大な箱」に見える(個々の3cm立方体が
+   識別できないほど近い)。あわせて、near=0.1/far=1000という広すぎる
+   near:far比のまま実寸データを見ることになり、深度バッファの精度が
+   voxel境界(隣接面が数値上ぴったり接している、Step 1で検証済み)付近で
+   不足し、z-fighting(層の境界に横線・隙間状のちらつきが出る)を招く。
+   voxel_size自体は正しい(Step 1のテストで隣接間隔=voxel_sizeを確認済み、
+   実データでも float32 丸め誤差は最大で約5マイクロメートルのみ)ため、
+   ここではvoxel_sizeを変更せず、カメラ側(位置・near/far)だけを、
+   実際にロードしたデータの範囲に合わせて調整する。
+   ------------------------------------------------------------ */
+let currentResetView = { position: INITIAL_CAMERA_POS, target: INITIAL_TARGET, near: 0.1, far: 1000 };
+
+function applyCameraView(view) {
+  camera.position.set(...view.position);
+  controls.target.set(...view.target);
+  camera.near = view.near;
+  camera.far = view.far;
+  camera.updateProjectionMatrix();
+  controls.update();
+}
+
+/**
+ * center(Vector3)・radius(数値)に基づき、カメラをそのデータ全体が
+ * 収まるように再配置し、near/far もそのスケールに合わせて更新する
+ * (registration-controller.js・plane-viewer.jsの既存パターンを踏襲)。
+ */
+function fitCameraToSphere(center, radius) {
+  const r = Math.max(radius, 0.1);
+  const view = {
+    position: [center.x + r, center.y + r, center.z + r],
+    target: [center.x, center.y, center.z],
+    near: Math.max(0.01, r * 0.005),
+    far: r * 20,
+  };
+  currentResetView = view;
+  applyCameraView(view);
 }
 function resizeRenderer() {
   const w = canvasHolder.clientWidth, h = canvasHolder.clientHeight;
@@ -625,41 +1478,46 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-// spatial_state(バックエンド更新エンジン)にはmobility_flagという概念が無く、
-// 連続値mu([0,1]、動的度合い)とconfidence_flag(CONFIRMED/PENDING)しか無い。
-// ビューワ表示用に、ここでSTATIC/DYNAMIC/PENDINGへ変換する。閾値(0.4/0.6)は
-// 暫定値であり、実データでの較正が必要(docs/spatial_id_design_memo_v2.md §4)。
-function muToMobilityFlag(v) {
-  if (v.confidence_flag !== 'CONFIRMED') return 'PENDING';
-  if (v.mu >= 0.6) return 'DYNAMIC';
-  if (v.mu <= 0.4) return 'STATIC';
-  return 'PENDING';
-}
+// localSpatialIdToWorldCenter()はshared/local-spatial-id.jsへ移設済み
+// (integrated-view.jsとの重複を避けるための共通化、2026-09-02)。
+// mu→mobility変換(旧muToMobilityFlag())は、backend/spatial_state_view.py
+// (Presentation/Read Model層)へ移設済み。Viewerはpresence/confidence/
+// mobilityという、Read Modelが既に確定した意味表現を受け取るだけになった。
 
 async function loadVoxels(spaceId) {
   let voxels = [];
   try {
-    const res = await fetch(`/api/spatial-state/${encodeURIComponent(spaceId)}`);
-    if (res.ok) {
-      const data = await res.json();
-      voxels = Object.entries(data.voxels || {}).map(([spatialId, v]) => {
-        const [, f, x, y] = spatialId.split('/');
-        return {
-          spatial_id: spatialId, x: Number(x), y: Number(y), z: Number(f),
-          state: v.state, mobility_flag: muToMobilityFlag(v), structural_label: null,
-        };
-      });
+    const data = await fetchSpatialState(spaceId);
+    const coordinateDefinition = currentSpace?.coordinate_definition;
+    if (!coordinateDefinition && Object.keys(data.voxels || {}).length > 0) {
+      console.warn('[loadVoxels] このLocal SpaceにCoordinateDefinitionが無いため、Spatial Stateを座標変換できません。');
     }
+    voxels = coordinateDefinition
+      ? Object.entries(data.voxels || {}).flatMap(([spatialId, v]) => {
+          try {
+            const { center, voxelSize } = localSpatialIdToWorldCenter(spatialId, coordinateDefinition);
+            return [{
+              spatial_id: spatialId, x: center[0], y: center[1], z: center[2], voxel_size: voxelSize,
+              presence: v.presence, mobility: v.mobility, structural_label: null,
+            }];
+          } catch (e) {
+            console.warn('[loadVoxels]', e.message);
+            return [];
+          }
+        })
+      : [];
   } catch (e) {
     console.warn('[loadVoxels] /api/spatial-state の取得に失敗しました。', e);
   }
 
   // 実データが無い空間(まだ計測が行われていない)は、デモ用のモックにフォールバックする
+  // (generateVoxelsForSpace()は実寸座標系とは無関係の、小さな固定スケールの
+  // デモ配置のままでよい。実データと重ねる要件はここには適用されない)。
   if (voxels.length === 0) {
     voxels = generateVoxelsForSpace(spaceId);
   }
 
-  currentVoxels = voxels.filter(v => v.state === 'OCCUPIED' || v.state === 'DECAYED');
+  currentVoxels = voxels.filter(v => isRenderablePresence(v.presence));
   buildMeshes();
   renderLegend();
   renderStats();
@@ -667,8 +1525,8 @@ async function loadVoxels(spaceId) {
 
 function renderStats() {
   const statsEl = document.getElementById('viewerStats');
-  const occCount = currentVoxels.filter(v => v.state === 'OCCUPIED').length;
-  const decCount = currentVoxels.filter(v => v.state === 'DECAYED').length;
+  const occCount = currentVoxels.filter(v => v.presence === 'PRESENT').length;
+  const decCount = currentVoxels.filter(v => v.presence === 'ABSENT').length;
   statsEl.innerHTML = `
     <div class="stat"><b>${occCount.toLocaleString()}</b><span>占有ボクセル</span></div>
     <div class="stat"><b>${decCount.toLocaleString()}</b><span>消失ボクセル</span></div>
@@ -684,10 +1542,13 @@ function buildMeshes() {
     if (mesh) { scene.remove(mesh); mesh.geometry.dispose(); mesh.material.dispose(); }
   });
 
-  const solidVoxels = currentVoxels.filter(v => v.state === 'OCCUPIED');
-  const ghostVoxels = currentVoxels.filter(v => v.state === 'DECAYED');
+  const solidVoxels = currentVoxels.filter(v => v.presence === 'PRESENT');
+  const ghostVoxels = currentVoxels.filter(v => v.presence === 'ABSENT');
 
-  const geo = new THREE.BoxGeometry(0.92, 0.92, 0.92);
+  // 単位立方体(1辺=1)。実際の大きさはinstanceごとのscale
+  // (v.voxel_size × SPATIAL_STATE_VOXEL_DISPLAY_RATIO)で決める
+  // (Spatial ID Voxel表示のensureSpatialVoxelMesh()と同じ方式)。
+  const geo = new THREE.BoxGeometry(1, 1, 1);
 
   const solidMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0.0 });
   solidMesh = buildInstancedFromVoxels(solidVoxels, geo, solidMat);
@@ -698,6 +1559,13 @@ function buildMeshes() {
   });
   ghostMesh = buildInstancedFromVoxels(ghostVoxels, geo, ghostMat);
   scene.add(ghostMesh);
+
+  // 【責務分離(2026-08-29)】Spatial State(state/mobility)表示は、
+  // point cloud ON/OFF・spatial voxel ON/OFFとは独立したレイヤーであり、
+  // 明示的にチェックしない限り意図せず表示しない(既定OFF)。
+  const showSpatialState = document.getElementById('chkShowSpatialState')?.checked ?? false;
+  solidMesh.visible = showSpatialState;
+  ghostMesh.visible = showSpatialState;
 
   // 参照用に、どのインデックスがどのボクセルかを引けるようにしておく(ホバー判定用)
   solidMesh.userData.voxels = solidVoxels;
@@ -710,9 +1578,15 @@ function buildInstancedFromVoxels(voxels, geo, mat) {
   const m = new THREE.Matrix4();
   const color = new THREE.Color();
   voxels.forEach((v, i) => {
-    m.makeTranslation(v.x, v.z, v.y); // three.jsのYを上向きにするため、モデルのzを上に割り当てる
+    // 表示サイズ = このvoxel自身の物理voxel_size(そのLocal Spatial IDが
+    // 属するzoomのCoordinateDefinition.unit-sizeから決まる、v.voxel_size)
+    // × 表示比率。固定値のcube sizeにはしない(2026-09-02修正)。
+    const displaySize = (v.voxel_size ?? 1) * SPATIAL_STATE_VOXEL_DISPLAY_RATIO;
+    const [dx, dy, dz] = toDisplayCoordinates(v.x, v.y, v.z);
+    m.makeScale(displaySize, displaySize, displaySize);
+    m.setPosition(dx, dy, dz);
     mesh.setMatrixAt(i, m);
-    const hex = colorMode === 'state' ? STATE_COLOR[v.state] : MOBILITY_COLOR[v.mobility_flag];
+    const hex = colorMode === 'state' ? colorForPresence(v.presence) : colorForMobility(v.mobility);
     color.setHex(hex ?? 0xcccccc);
     mesh.setColorAt(i, color);
   });
@@ -743,7 +1617,7 @@ function onHover(ev) {
     tooltip.style.left = left + 'px';
     tooltip.style.top = top + 'px';
 
-    tooltip.innerHTML = `<b>${v.spatial_id}</b><br>state: ${v.state}<br>mobility: ${v.mobility_flag}` +
+    tooltip.innerHTML = `<b>${v.spatial_id}</b><br>presence: ${v.presence}<br>mobility: ${v.mobility}` +
       (v.structural_label ? `<br>label: ${v.structural_label}` : '');
   } else {
     tooltip.style.display = 'none';
@@ -755,15 +1629,14 @@ function renderLegend() {
   legendEl.innerHTML = '';
   const counts = {};
   currentVoxels.forEach(v => {
-    const key = colorMode === 'state' ? v.state : v.mobility_flag;
+    const key = colorMode === 'state' ? v.presence : v.mobility;
     counts[key] = (counts[key] || 0) + 1;
   });
 
-  LEGEND[colorMode].forEach(([label, hex, isGhost]) => {
+  const entries = colorMode === 'state' ? PRESENCE_LEGEND : MOBILITY_LEGEND;
+  entries.forEach(({ key, label, color: hex, ghost: isGhost }) => {
     const row = document.createElement('div');
     row.className = 'legend-item';
-    const colorTable = colorMode === 'state' ? STATE_COLOR : MOBILITY_COLOR;
-    const key = Object.keys(colorTable).find(k => colorTable[k] === hex);
     const cnt = counts[key] || 0;
     const swatchClass = isGhost ? 'legend-swatch ghost' : 'legend-swatch';
     const swatchStyle = isGhost ? '' : `style="background:#${hex.toString(16).padStart(6,'0')}"`;
@@ -786,11 +1659,356 @@ document.getElementById('btnColorMobility').onclick = (e) => {
 };
 
 /* ============================================================
+   5. Spatial ID voxel(Step 1のSpatialVoxelをViewerへ接続する、ロードマップStep 2)
+      + zoom level切り替え(Step 3) + Visualization / Coloring Strategy(Step 4)
+
+   【重要】ここで描画するのは、Base Map点群をそのLocal Space自身の
+   CoordinateDefinitionでfinest(3cm)Local Spatial IDへ集約した結果
+   (voxel_center)であり、上のSpatial State(占有状態)ビューワとは無関係の
+   別レイヤー。Global placementは使わず、Local Space自身のprovisional
+   座標系(ワールド座標そのもの)でそのまま描画する。
+
+   【Step 4: 色分けについて】このViewer(JS)自身はStructural Label等の
+   domain意味を一切判定しない。色の決定(どのvoxelが何色か)はすべて
+   backend側(voxel_color_strategy.py)が計算し、Viewerには
+   「色カテゴリ番号(color_code、uint8)」+「番号→RGBの小さな対応表
+   (legend)」だけが渡される。Viewerはlegend[code]を引いて
+   mesh.instanceColorへ書き込むだけの、データ駆動な描画に徹する。
+   ============================================================ */
+let spatialVoxelMesh = null;
+let spatialPointCloudObject = null;
+let spatialVoxelSpaceId = null; // 現在ロード済み(または読み込み中)のspace_id
+let spatialVoxelZoomLevel = null; // 現在ロード済みのzoom_level(ロードマップStep 3)
+let spatialVoxelColorMode = null; // 現在適用済みのcolor mode(ロードマップStep 4)
+
+/**
+ * このLocal Space自身のCoordinateDefinition.unit-sizeから選択可能な
+ * zoom level一覧を取得し、<select>を作り直す(finest→coarseの順、既定は
+ * finestを選択)。他のLocal Spaceのunit-sizeは一切参照しない。
+ */
+async function populateSpatialVoxelZoomSelect(spaceId) {
+  const selectEl = document.getElementById('selSpatialVoxelZoom');
+  selectEl.innerHTML = '<option>読み込み中…</option>';
+  try {
+    const res = await fetch(`/api/local-spaces/${encodeURIComponent(spaceId)}/spatial-voxels/levels`);
+    if (!res.ok) { selectEl.innerHTML = '<option>取得失敗</option>'; return; }
+    const data = await res.json();
+    selectEl.innerHTML = data.levels.map(lv =>
+      `<option value="${lv.zoom_level}" ${lv.zoom_level === data.finest_zoom_level ? 'selected' : ''}>` +
+      `Zoom ${lv.zoom_level} — ${lv.voxel_size}m</option>`
+    ).join('');
+  } catch (e) {
+    selectEl.innerHTML = '<option>取得失敗</option>';
+  }
+}
+
+
+function setSpatialVoxelStatus(text) {
+  document.getElementById('spatialVoxelStatus').textContent = text;
+}
+
+function clearSpatialVoxelObjects() {
+  if (spatialVoxelMesh) { scene.remove(spatialVoxelMesh); spatialVoxelMesh.geometry.dispose(); spatialVoxelMesh.material.dispose(); spatialVoxelMesh = null; }
+  if (spatialPointCloudObject) { scene.remove(spatialPointCloudObject); spatialPointCloudObject.geometry.dispose(); spatialPointCloudObject.material.dispose(); spatialPointCloudObject = null; }
+  spatialVoxelSpaceId = null;
+  spatialVoxelZoomLevel = null;
+  spatialVoxelColorMode = null;
+  document.getElementById('chkShowSpatialVoxels').checked = false;
+  document.getElementById('chkShowPointCloud').checked = false;
+  document.getElementById('selSpatialVoxelColorMode').value = 'DEFAULT';
+  setSpatialVoxelStatus('');
+  // 別のLocal Spaceに切り替えたら、前のspaceに合わせたカメラフィットも
+  // 持ち越さない(新しいspaceのデータをロードするまでは既定の視点に戻す)。
+  currentResetView = { position: INITIAL_CAMERA_POS, target: INITIAL_TARGET, near: 0.1, far: 1000 };
+  applyCameraView(currentResetView);
+}
+
+/**
+ * Spatial ID voxel(指定zoom_level。省略時は現在<select>で選ばれている値)を、
+ * 共有geometry(単位立方体)+共有material+InstancedMeshで1つだけ生成する
+ * (voxelごとに個別Mesh/Objectは作らない)。
+ * instance position = voxel_center、instance scale = voxel_size
+ * (meta.voxel_sizeはそのzoom levelで全voxel共通の1値)。
+ *
+ * 【ロードマップStep 3】zoom_levelはfixed番号ではなく、都度<select>
+ * (populateSpatialVoxelZoomSelectでそのLocal Space自身のunit-sizeから
+ * 生成済み)から取る。finestより粗いlevelはbackend側でCoordinateDefinition
+ * を変更せずderived aggregationされるだけであり、ここでの扱いはfinestと
+ * 同じ(instance position = voxel_center、instance scale = voxel_size)。
+ */
+async function ensureSpatialVoxelMesh(spaceId, zoomLevel) {
+  if (zoomLevel == null) {
+    const selected = document.getElementById('selSpatialVoxelZoom').value;
+    zoomLevel = selected !== '' ? parseInt(selected, 10) : null;
+  }
+  if (spatialVoxelMesh && spatialVoxelSpaceId === spaceId && spatialVoxelZoomLevel === zoomLevel) return;
+
+  const zoomQuery = zoomLevel != null ? `?zoom_level=${zoomLevel}` : '';
+
+  // 【実機性能確認用の計測(2026-08-29)】設計変更ではなく、DevToolsコンソールで
+  // 各段階の所要時間・メモリを確認できるようにするための最小限の計測コード。
+  const logMemory = (label) => {
+    if (performance.memory) {
+      console.log(`[spatial-voxel-perf] ${label}: heap=${(performance.memory.usedJSHeapSize / 1e6).toFixed(1)}MB`);
+    }
+  };
+  console.time('[spatial-voxel-perf] total');
+  logMemory('start');
+
+  setSpatialVoxelStatus('Spatial ID voxelを読み込み中…(未キャッシュのlevelは数秒〜数十秒かかることがあります)');
+  console.time('[spatial-voxel-perf] fetch meta');
+  const metaRes = await fetch(`/api/local-spaces/${encodeURIComponent(spaceId)}/spatial-voxels${zoomQuery}`);
+  console.timeEnd('[spatial-voxel-perf] fetch meta');
+  if (!metaRes.ok) { setSpatialVoxelStatus('Spatial ID voxelの取得に失敗しました。'); return; }
+  const meta = await metaRes.json();
+
+  console.time('[spatial-voxel-perf] fetch positions.bin');
+  const posRes = await fetch(`/api/local-spaces/${encodeURIComponent(spaceId)}/spatial-voxels/positions.bin${zoomQuery}`);
+  if (!posRes.ok) { setSpatialVoxelStatus('Spatial ID voxel座標の取得に失敗しました。'); return; }
+  const buffer = await posRes.arrayBuffer();
+  console.timeEnd('[spatial-voxel-perf] fetch positions.bin');
+  console.log(`[spatial-voxel-perf] positions.bin size=${(buffer.byteLength / 1e6).toFixed(1)}MB, voxel_count=${meta.voxel_count.toLocaleString()}`);
+  const positions = new Float32Array(buffer); // [x0,y0,z0, x1,y1,z1, ...]、meta.voxel_count*3個
+
+  console.time('[spatial-voxel-perf] InstancedMesh construction');
+  const geo = new THREE.BoxGeometry(1, 1, 1); // 共有geometry(単位立方体、instanceごとにscaleで3cmにする)
+  // 【Step 4 色分け不具合の修正(2026-09-01)】
+  // material.vertexColors:trueは、instanceColorとは別に「USE_COLOR」を
+  // 有効化し、shaderにgeometry側のcolor頂点属性(attribute vec3 color)への
+  // 依存を追加する。このBoxGeometryはcolor属性を持たないため、WebGLは
+  // 未バインドのgeneric attributeの既定値(0,0,0)を使い、
+  // vColor = vec3(1.0) *= color(=0,0,0) で常に(0,0,0)になり、その後
+  // instanceColorを掛けても0のまま=常に真っ黒になっていた
+  // (Default/Structural Labelどちらでも黒くなり、切替で変化しなかった
+  // 原因)。instanceColorによる着色(USE_INSTANCING_COLOR)は
+  // material.vertexColorsに依存せず、mesh.instanceColorの有無だけで
+  // 有効になるため、vertexColors:trueは不要かつ有害であり、外すだけで直る。
+  const mat = new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0.0 });
+  const mesh = new THREE.InstancedMesh(geo, mat, meta.voxel_count);
+  mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(meta.voxel_count * 3), 3);
+  console.timeEnd('[spatial-voxel-perf] InstancedMesh construction');
+
+  console.time('[spatial-voxel-perf] setMatrixAt loop');
+  const m = new THREE.Matrix4();
+  const voxelSize = meta.voxel_size;
+  const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < meta.voxel_count; i++) {
+    const [dx, dy, dz] = toDisplayCoordinates(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
+    m.makeScale(voxelSize, voxelSize, voxelSize);
+    m.setPosition(dx, dy, dz);
+    mesh.setMatrixAt(i, m);
+    if (dx < min[0]) min[0] = dx; if (dy < min[1]) min[1] = dy; if (dz < min[2]) min[2] = dz;
+    if (dx > max[0]) max[0] = dx; if (dy > max[1]) max[1] = dy; if (dz > max[2]) max[2] = dz;
+  }
+  mesh.instanceMatrix.needsUpdate = true;
+  // 【原因B】InstancedMeshの既定の境界球はgeometry(単位立方体)だけから
+  // 計算され、setMatrixAt()で設定した個々のinstanceの実際の変位を
+  // 反映しない。computeBoundingSphere()を明示的に呼び、frustum
+  // culling判定を実データ範囲に合わせて正しくする(呼ばないと、
+  // カメラ位置によってmesh全体が誤ってカリングされうる)。
+  mesh.computeBoundingSphere();
+  console.timeEnd('[spatial-voxel-perf] setMatrixAt loop');
+  mesh.visible = document.getElementById('chkShowSpatialVoxels').checked;
+
+  clearExistingSpatialVoxelMesh(); // 別level/別spaceのmeshが残っていれば掃除
+  spatialVoxelMesh = mesh;
+  spatialVoxelSpaceId = spaceId;
+  spatialVoxelZoomLevel = meta.zoom_level;
+  scene.add(mesh);
+  setSpatialVoxelStatus(`voxel数: ${meta.voxel_count.toLocaleString()} (${meta.voxel_size}m立方、zoom=${meta.zoom_level})`);
+
+  // 【原因A・C】実データ範囲にカメラを合わせ、near/farもそのスケールに調整する
+  // (旧モックデータ用の固定カメラ位置のままだと、実寸建物のほぼ内部に
+  // カメラが居ることになり、近接面が画面いっぱいに映って暗く見える問題と、
+  // near:far比が広すぎて生じるz-fighting問題の両方に対処する)。
+  const center = { x: (min[0] + max[0]) / 2, y: (min[1] + max[1]) / 2, z: (min[2] + max[2]) / 2 };
+  const radius = Math.sqrt((max[0] - min[0]) ** 2 + (max[1] - min[1]) ** 2 + (max[2] - min[2]) ** 2) / 2;
+  fitCameraToSphere(center, radius);
+
+  // 【Step 4】新規構築したmeshには、現在<select>で選ばれているcolor modeを適用する
+  // (geometry/instance matrixの再構築とは独立した処理)。
+  await applyVoxelColors(spaceId, meta.zoom_level, getSelectedColorMode());
+
+  console.timeEnd('[spatial-voxel-perf] total');
+  logMemory('after add to scene');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    logMemory('after 2 rendered frames (概ね初回描画後)');
+  }));
+}
+
+function clearExistingSpatialVoxelMesh() {
+  // ensureSpatialVoxelMesh()はここに到達する前に(space_id, zoom_level)が
+  // 一致する場合は早期returnしているため、ここに来た時点で古いmeshが
+  // 残っていれば必ず別space/別levelのものであり、常に破棄してよい。
+  if (spatialVoxelMesh) {
+    scene.remove(spatialVoxelMesh); spatialVoxelMesh.geometry.dispose(); spatialVoxelMesh.material.dispose(); spatialVoxelMesh = null;
+  }
+}
+
+function getSelectedColorMode() {
+  return document.getElementById('selSpatialVoxelColorMode').value || 'DEFAULT';
+}
+
+/**
+ * 【ロードマップStep 4】既に構築済みのspatialVoxelMesh(geometry/instance
+ * matrixは変更しない)に対し、指定colorModeのcolor_codeを取得して
+ * instanceColorへ書き込むだけの処理。zoom levelの再構築(再voxelize)は
+ * 発生しない(positions.binの再取得もしない)。
+ *
+ * 色の意味づけ(どのcategoryが何色か)は一切ここに書かない。backendが
+ * 返すlegend(code -> [r,g,b])をそのまま適用するだけの、データ駆動な処理。
+ */
+async function applyVoxelColors(spaceId, zoomLevel, colorMode) {
+  if (!spatialVoxelMesh || spatialVoxelSpaceId !== spaceId || spatialVoxelZoomLevel !== zoomLevel) return;
+
+  console.time('[spatial-voxel-perf] fetch colors');
+  const colorMetaRes = await fetch(
+    `/api/local-spaces/${encodeURIComponent(spaceId)}/spatial-voxels/colors?zoom_level=${zoomLevel}&mode=${colorMode}`
+  );
+  if (!colorMetaRes.ok) { setSpatialVoxelStatus('色情報の取得に失敗しました。'); return; }
+  const colorMeta = await colorMetaRes.json();
+
+  const colorBinRes = await fetch(
+    `/api/local-spaces/${encodeURIComponent(spaceId)}/spatial-voxels/colors.bin?zoom_level=${zoomLevel}&mode=${colorMode}`
+  );
+  if (!colorBinRes.ok) { setSpatialVoxelStatus('色バッファの取得に失敗しました。'); return; }
+  const codes = new Uint8Array(await colorBinRes.arrayBuffer());
+  console.timeEnd('[spatial-voxel-perf] fetch colors');
+
+  if (codes.length !== spatialVoxelMesh.count) {
+    console.warn(`[spatial-voxel-perf] color件数(${codes.length})とinstance数(${spatialVoxelMesh.count})が一致しません`);
+  }
+
+  console.time('[spatial-voxel-perf] apply instanceColor');
+  const legend = colorMeta.legend; // {"code文字列": [r,g,b]} (小さな対応表、backend一元管理)
+  const colorArray = spatialVoxelMesh.instanceColor.array;
+  for (let i = 0; i < codes.length; i++) {
+    const rgb = legend[String(codes[i])] || [1, 0, 1]; // 未知codeはマゼンタで目立たせる(フォールバック)
+    colorArray[i * 3] = rgb[0];
+    colorArray[i * 3 + 1] = rgb[1];
+    colorArray[i * 3 + 2] = rgb[2];
+  }
+  spatialVoxelMesh.instanceColor.needsUpdate = true;
+  console.timeEnd('[spatial-voxel-perf] apply instanceColor');
+
+  spatialVoxelColorMode = colorMode;
+  setSpatialVoxelStatus(
+    `voxel数: ${spatialVoxelMesh.count.toLocaleString()} (zoom=${zoomLevel}, color=${colorMode})`
+  );
+}
+
+/** Base Map点群をTHREE.Pointsとして表示する(voxel表示とは独立にON/OFFできる)。 */
+async function ensureSpatialPointCloud(spaceId, tokuteiCode) {
+  if (spatialPointCloudObject) return;
+
+  console.time('[spatial-voxel-perf] point cloud total');
+  setSpatialVoxelStatus('点群を読み込み中…');
+  try {
+    const manifest = await loadBaseMapManifest('./base_maps/manifest.json');
+    const entry = manifest.find(e => e.id === tokuteiCode);
+    if (!entry) { setSpatialVoxelStatus('ベースマップがmanifestに見つかりません。'); return; }
+
+    const { positions, colors } = await loadPointCloudFromURL(`./base_maps/${entry.file}`);
+    console.timeEnd('[spatial-voxel-perf] point cloud total');
+    console.log(`[spatial-voxel-perf] point cloud points=${(positions.length / 3).toLocaleString()}`);
+    const displayPositions = new Float32Array(positions.length);
+    for (let i = 0; i < positions.length / 3; i++) {
+      const [dx, dy, dz] = toDisplayCoordinates(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
+      displayPositions[i * 3] = dx; displayPositions[i * 3 + 1] = dy; displayPositions[i * 3 + 2] = dz;
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(displayPositions, 3));
+    let mat;
+    if (colors) {
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      mat = new THREE.PointsMaterial({ size: 0.02, vertexColors: true });
+    } else {
+      mat = new THREE.PointsMaterial({ size: 0.02, color: 0x888888 });
+    }
+    spatialPointCloudObject = new THREE.Points(geo, mat);
+    spatialPointCloudObject.visible = document.getElementById('chkShowPointCloud').checked;
+    scene.add(spatialPointCloudObject);
+    setSpatialVoxelStatus(`点群: ${(positions.length / 3).toLocaleString()}点`);
+
+    // voxelがまだロードされていない場合のみ、点群の実データ範囲にカメラを
+    // 合わせる(voxel側が既にロード済みなら、そちらで合わせた視点を優先する)。
+    if (!spatialVoxelMesh) {
+      geo.computeBoundingSphere();
+      if (geo.boundingSphere) {
+        fitCameraToSphere(geo.boundingSphere.center, geo.boundingSphere.radius);
+      }
+    }
+  } catch (e) {
+    setSpatialVoxelStatus(`点群の読み込みに失敗しました: ${e.message}`);
+  }
+}
+
+document.getElementById('chkShowSpatialState').onchange = (ev) => {
+  if (solidMesh) solidMesh.visible = ev.target.checked;
+  if (ghostMesh) ghostMesh.visible = ev.target.checked;
+};
+
+document.getElementById('chkShowSpatialVoxels').onchange = async (ev) => {
+  if (!currentSpace) { ev.target.checked = false; return; }
+  if (ev.target.checked) {
+    await ensureSpatialVoxelMesh(currentSpace.space_id);
+    if (spatialVoxelMesh) spatialVoxelMesh.visible = true;
+  } else if (spatialVoxelMesh) {
+    spatialVoxelMesh.visible = false;
+  }
+};
+document.getElementById('chkShowPointCloud').onchange = async (ev) => {
+  if (!currentSpace) { ev.target.checked = false; return; }
+  if (ev.target.checked) {
+    await ensureSpatialPointCloud(currentSpace.space_id, currentSpace.tokutei_code);
+    if (spatialPointCloudObject) spatialPointCloudObject.visible = true;
+  } else if (spatialPointCloudObject) {
+    spatialPointCloudObject.visible = false;
+  }
+};
+
+// 【ロードマップStep 3】表示level(zoom)を切り替える。Voxel表示が既にONの
+// 場合のみ即座に再構築する(OFFの間は選択を覚えておくだけで、次にONに
+// した時点でensureSpatialVoxelMeshが<select>の現在値を読む)。
+// CoordinateDefinition自体は変更せず、Visualization用のderived
+// aggregationを切り替えるだけ(backend側もBase Mapの再voxelizeはしない)。
+document.getElementById('selSpatialVoxelZoom').onchange = async () => {
+  if (!currentSpace) return;
+  if (document.getElementById('chkShowSpatialVoxels').checked) {
+    await ensureSpatialVoxelMesh(currentSpace.space_id);
+    if (spatialVoxelMesh) spatialVoxelMesh.visible = true;
+  }
+};
+
+// 【ロードマップStep 4】color modeの切替は、zoom levelとは独立して動作する。
+// 既にmeshが構築済みなら、instance matrix(geometry)には一切触れず、
+// instanceColorだけを更新する(mode切替でgeometry再voxelizeしない)。
+// meshが無ければ(Voxel表示がまだONにされていない)、選択だけ覚えておき、
+// 次にensureSpatialVoxelMeshが呼ばれた時点でgetSelectedColorMode()経由で反映される。
+document.getElementById('selSpatialVoxelColorMode').onchange = async (ev) => {
+  if (!currentSpace || !spatialVoxelMesh) return;
+  await applyVoxelColors(currentSpace.space_id, spatialVoxelZoomLevel, ev.target.value);
+};
+
+/* ============================================================
    init
    ============================================================ */
-renderBuildingList();
-renderSpaceGrid();
-initThree();
+async function init() {
+  try {
+    await fetchBuildings();
+  } catch (e) {
+    console.error(e);
+  }
+  activeBuildingId = buildings[0]?.building_id ?? null;
+  if (activeBuildingId) {
+    try { await fetchLocalSpaces(activeBuildingId); } catch (e) { console.error(e); }
+  }
+  renderBuildingList();
+  renderSpaceGrid();
+  initThree();
+}
+init();
 </script>
 </body>
 </html>

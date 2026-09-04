@@ -5,6 +5,18 @@ open3d>=0.19
 laspy>=2.5
 numpy
 
+# space_definition_generator.py で使用(PCAによる座標定義の自動生成)
+scikit-learn
+
+# spatial_id/geographic_projection.py で使用(GeographicPoint(度)→
+# ProjectedPoint(メートル)のCRS変換)。公式Ouranos-GEXライブラリが指定する
+# pyproj 3.6.1はPython >=3.9必須で、本プロジェクトの実行環境(Python 3.8.10、
+# pygicpのcp38バイナリに拘束)では使えない。pyproj 3.6.0の変更履歴に
+# "DEP: Minimum supported Python version 3.9" と明記されており、3.5.0が
+# Python 3.8をサポートする最後のリリース(Windows cp38 wheel配布あり、
+# 2026-09-02にEPSG:4326→EPSG:6677変換で動作確認済み)。
+pyproj==3.5.0
+
 # pygicp(fast_gicpのPythonバインディング)はPyPIに無く、pip installできない。
 # backend/vendor/pygicp-win-cp38/ にビルド済みバイナリを同梱しているので、
 # venv作成後に site-packages へコピーすること。詳細は SETUP.md を参照。

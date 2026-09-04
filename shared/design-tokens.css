@@ -1,0 +1,219 @@
+/**
+ * shared/design-tokens.css
+ *
+ * 「研究用Spatial Digital Twin Workbench」としての共通デザイン基盤(2026-09-03)。
+ * dark/neutral technical UI・3D Viewerが映える配色・SOLVED/WARNING/CONFLICT/
+ * ERRORの明確な区別を目的とした、design tokens(CSS custom properties)と
+ * 基本component style。
+ *
+ * 【方針】
+ * - ここは「土台」であり、今回は各画面の大規模レイアウト変更・DOM再構築は
+ *   行わない。既存の各画面(local_space_prototype.html、registration/*、
+ *   nodal/*、integrated/*)は、既存のvar(--bg)・var(--text)等の変数名を
+ *   そのまま使い続けられるよう、変数名は変更せず、定義値だけをここに集約した
+ *   (--danger/--warn/--neutral 等の旧トークン名は、新しい--status-*系への
+ *   エイリアスとして残しており、既存コードを書き換えなくても新配色が反映される)。
+ * - excessiveなgradient/glow/animationは使わない(shadowは控えめ、hoverは
+ *   色の変化のみ)。
+ * - SOLVED / WARNING / CONFLICT / ERROR は、意図的に別系統の色(緑/黄/橙/赤)
+ *   に分離している(旧デザインではCONFLICTとERRORが同じ「danger」色で
+ *   区別できていなかった)。
+ * - `.dtw-` prefixのcomponent classは、今回は新規追加のみ(既存要素への
+ *   一括付け替えはしない)。今後のSpatial Network View等、新規画面を
+ *   ここから作れるようにするための再利用可能な基盤。
+ */
+
+:root {
+  /* ---- surfaces ---- */
+  --bg: #15181c;
+  --bg-canvas: #10141a; /* 3D Viewerの背景(shared/viewer-theme.jsのVIEWER_BACKGROUND_COLORと同じ値) */
+  --panel: #1c2126;
+  --panel-raised: #242a30;
+  --panel-overlay: rgba(28, 33, 38, 0.88); /* 3D Viewer上に浮かせる半透明パネル(stats/tooltip等) */
+  --border: #343b42;
+  --border-soft: #262b31;
+  --border-strong: #4a525a;
+
+  /* ---- text ---- */
+  --text: #e7e9ea;
+  --text-dim: #99a1a8;
+  --text-faint: #6c747b;
+  --text-inverse: #0c0f11;
+
+  /* ---- accent(ブランド/インタラクティブ要素) ---- */
+  --accent: #1abc9c;
+  --accent-dark: #14a087;
+  --accent-soft: rgba(26, 188, 156, 0.16);
+
+  /* ---- status colors(SOLVED / WARNING / CONFLICT / ERROR を明確に分離) ---- */
+  --status-solved: #34c785;
+  --status-solved-soft: rgba(52, 199, 133, 0.16);
+  --status-warning: #e0a733;
+  --status-warning-soft: rgba(224, 167, 51, 0.16);
+  --status-conflict: #e2793d;
+  --status-conflict-soft: rgba(226, 121, 61, 0.16);
+  --status-error: #e2555a;
+  --status-error-soft: rgba(226, 85, 90, 0.16);
+  --status-error-dark: #c9484d;
+  --status-info: #4f9bd6;
+  --status-info-soft: rgba(79, 155, 214, 0.16);
+  --status-pending: var(--text-faint);
+  --status-pending-soft: var(--panel-raised);
+
+  /* ---- 旧トークン名エイリアス(既存コードのvar(--danger)等をそのまま新配色へ) ---- */
+  --danger: var(--status-error);
+  --danger-soft: var(--status-error-soft);
+  --warn: var(--status-warning);
+  --neutral: var(--text-faint);
+
+  /* ---- overlay / chip(スウォッチ枠・コードチップ背景・モーダル背景等) ---- */
+  --overlay-backdrop: rgba(4, 5, 6, 0.62);
+  --tooltip-bg: rgba(8, 10, 12, 0.94);
+  --swatch-outline: rgba(255, 255, 255, 0.18);
+  --code-chip-bg: rgba(255, 255, 255, 0.08);
+
+  /* ---- spacing ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* ---- radius ---- */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius: 8px; /* 既存コードの大半がこの名前でカード等の丸みを参照している */
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  /* ---- shadow(控えめ。glowは使わない) ---- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
+
+  /* ---- typography ---- */
+  --font-sans: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --text-2xs: 10px;
+  --text-xs: 11px;
+  --text-sm: 12.5px;
+  --text-md: 13.5px;
+  --text-lg: 15px;
+
+  /* ---- focus ---- */
+  --focus-ring: 0 0 0 3px var(--accent-soft);
+
+  /* ---- scrollbar ---- */
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: var(--border-strong);
+  --scrollbar-thumb-hover: var(--text-faint);
+}
+
+/* ============================================================
+ * グローバルなscrollbar/focus(既存セレクタには触れず、cascadeで
+ * 全画面に適用される。個別に:focusを定義済みの要素は、既存ルールが
+ * そのまま優先される=挙動は変えない)
+ * ============================================================ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb); border-radius: var(--radius-pill);
+  border: 2px solid var(--panel);
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+
+:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* ネイティブcheckbox/radioは個別に作り直さず、accent-colorのみ指定して
+   dark themeに馴染ませる(ブラウザ標準のコントラスト計算に任せる)。 */
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+
+/* ネイティブfile inputの選択ボタン部分(::file-selector-button)のみ
+   ダークテーマに合わせる。input自体のvalue表示テキスト色も合わせて調整する。
+   HTML側の<input type="file">要素自体は無変更。 */
+input[type="file"] { color: var(--text-dim); font-size: var(--text-sm); font-family: inherit; }
+input[type="file"]::file-selector-button {
+  font-family: var(--font-sans); font-size: var(--text-sm); font-weight: 600;
+  padding: 6px 14px; margin-right: 10px; border-radius: var(--radius-md); border: 1px solid var(--border);
+  background: var(--panel); color: var(--text); cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+input[type="file"]::file-selector-button:hover { background: var(--panel-raised); border-color: var(--border-strong); }
+
+/* ============================================================
+ * 共通component style("dtw-" = Digital Twin Workbench)。
+ * 既存画面のクラスとは独立した新規クラスで、今後の新規画面
+ * (Spatial Network View等)がここから組み立てられるようにするための基盤。
+ * 既存要素への適用は今回は行わない(大規模DOM変更を避けるため)。
+ * ============================================================ */
+
+/* --- Buttons --- */
+.dtw-btn {
+  font-family: var(--font-sans); font-size: var(--text-sm); font-weight: 600;
+  padding: 6px 14px; border-radius: var(--radius-md); border: 1px solid var(--border);
+  background: var(--panel); color: var(--text); cursor: pointer; line-height: 1.4;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.dtw-btn:hover:not(:disabled) { background: var(--panel-raised); border-color: var(--border-strong); }
+.dtw-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.dtw-btn--primary { background: var(--accent); border-color: var(--accent); color: var(--text-inverse); }
+.dtw-btn--primary:hover:not(:disabled) { background: var(--accent-dark); border-color: var(--accent-dark); }
+.dtw-btn--ghost { background: transparent; }
+.dtw-btn--ghost:hover:not(:disabled) { background: var(--panel-raised); }
+.dtw-btn--danger { color: var(--status-error); border-color: var(--status-error-soft); background: transparent; }
+.dtw-btn--danger:hover:not(:disabled) { background: var(--status-error-soft); border-color: var(--status-error); }
+.dtw-btn--small { padding: 4px 10px; font-size: var(--text-xs); }
+
+/* --- Inputs / Select --- */
+.dtw-input, .dtw-select {
+  font-family: inherit; font-size: var(--text-sm); padding: 6px 10px;
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: var(--panel); color: var(--text);
+}
+.dtw-input::placeholder { color: var(--text-faint); }
+.dtw-input:focus, .dtw-select:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
+.dtw-input:disabled, .dtw-select:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* --- Cards / Panels --- */
+.dtw-card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: var(--space-4);
+}
+.dtw-card--raised { background: var(--panel-raised); }
+
+/* --- Status badges(SOLVED / WARNING / CONFLICT / ERROR / INFO / PENDING) --- */
+.dtw-badge {
+  display: inline-block; font-size: var(--text-2xs); font-weight: 700; letter-spacing: 0.02em;
+  padding: 2px 8px; border-radius: var(--radius-pill); white-space: nowrap;
+}
+.dtw-badge--solved   { background: var(--status-solved-soft);   color: var(--status-solved); }
+.dtw-badge--warning  { background: var(--status-warning-soft);  color: var(--status-warning); }
+.dtw-badge--conflict { background: var(--status-conflict-soft); color: var(--status-conflict); }
+.dtw-badge--error    { background: var(--status-error-soft);    color: var(--status-error); }
+.dtw-badge--info     { background: var(--status-info-soft);     color: var(--status-info); }
+.dtw-badge--pending  { background: var(--status-pending-soft);  color: var(--status-pending); border: 1px solid var(--border); }
+
+/* --- Tabs --- */
+.dtw-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
+.dtw-tab {
+  padding: 9px 16px; font-size: var(--text-sm); cursor: pointer; color: var(--text-dim);
+  border-bottom: 2px solid transparent; font-weight: 500; transition: color 0.12s, border-color 0.12s;
+  background: none; border-left: none; border-right: none; border-top: none;
+}
+.dtw-tab:hover { color: var(--text); }
+.dtw-tab.active, .dtw-tab--active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+/* --- Modal --- */
+.dtw-modal-overlay {
+  position: fixed; inset: 0; background: var(--overlay-backdrop);
+  display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+.dtw-modal {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-lg); padding: 20px 22px;
+}
