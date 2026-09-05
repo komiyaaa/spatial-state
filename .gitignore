@@ -49,6 +49,19 @@ backend/data/*.log
 backend/buildings.json
 backend/local_spaces.json
 
+# 研究データ(GitHubにはコードのみを置き、研究データはローカルで管理する方針。
+# 2026-09-06確定。既存のローカルデータは削除せず、gitの追跡対象から外すだけ)
+base_maps/*.las
+base_maps/*.ply
+base_maps/manifest.json
+backend/space_definitions/*.json
+
+# 研究資料(PDF/PPTX/DOCX/ZIP等の大容量バイナリ資料。設計docs(*.md)は対象外)
+*.pdf
+*.pptx
+*.docx
+*.zip
+
 # OS固有ファイル
 .DS_Store
 Thumbs.db
